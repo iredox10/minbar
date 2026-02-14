@@ -1,0 +1,122 @@
+export interface Speaker {
+  $id: string;
+  name: string;
+  slug: string;
+  bio: string;
+  imageUrl: string;
+  featured: boolean;
+  createdAt: string;
+}
+
+export interface Series {
+  $id: string;
+  title: string;
+  slug: string;
+  speakerId: string;
+  description: string;
+  artworkUrl: string;
+  category: string;
+  episodeCount: number;
+  createdAt: string;
+}
+
+export interface Episode {
+  $id: string;
+  title: string;
+  slug: string;
+  seriesId: string;
+  audioUrl: string;
+  duration: number;
+  publishedAt: string;
+  description: string;
+  episodeNumber: number;
+}
+
+export interface Dua {
+  $id: string;
+  title: string;
+  arabic: string;
+  transliteration?: string;
+  translation: string;
+  reference: string;
+  category: DuaCategory;
+  audioUrl?: string;
+  sortOrder: number;
+}
+
+export type DuaCategory = 'prophetic' | 'quranic' | 'morning' | 'evening' | 'sleep' | 'travel' | 'eating' | 'general';
+
+export interface RadioStation {
+  $id: string;
+  name: string;
+  streamUrl: string;
+  logoUrl?: string;
+  description?: string;
+  isLive: boolean;
+}
+
+export interface DownloadedEpisode {
+  id?: number;
+  episodeId: string;
+  title: string;
+  seriesId: string;
+  audioUrl: string;
+  localBlobUrl: string;
+  duration: number;
+  downloadedAt: Date;
+  fileSize: number;
+}
+
+export interface Favorite {
+  id?: number;
+  type: 'episode' | 'series' | 'dua';
+  itemId: string;
+  title: string;
+  imageUrl?: string;
+  addedAt: Date;
+}
+
+export interface Playlist {
+  id?: number;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PlaylistItem {
+  id?: number;
+  playlistId: number;
+  episodeId: string;
+  addedAt: Date;
+}
+
+export interface PlaybackHistory {
+  id?: number;
+  episodeId: string;
+  position: number;
+  duration: number;
+  playedAt: Date;
+  completed: boolean;
+}
+
+export interface AppSettings {
+  id?: number;
+  theme: 'light' | 'dark' | 'system';
+  playbackSpeed: number;
+  sleepTimerMinutes?: number;
+  downloadWifiOnly: boolean;
+  autoDownload: boolean;
+}
+
+export type PlayerState = 'idle' | 'loading' | 'playing' | 'paused';
+
+export interface CurrentTrack {
+  id: string;
+  title: string;
+  audioUrl: string;
+  artworkUrl?: string;
+  speaker?: string;
+  duration: number;
+  type: 'episode' | 'radio' | 'dua';
+}
