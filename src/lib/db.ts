@@ -163,3 +163,15 @@ export async function getPlaylists(): Promise<Playlist[]> {
 export async function getPlaylistItems(playlistId: number): Promise<PlaylistItem[]> {
   return db.playlistItems.where('playlistId').equals(playlistId).toArray();
 }
+
+export async function deletePlaylist(playlistId: number): Promise<void> {
+  await db.playlistItems.where('playlistId').equals(playlistId).delete();
+  await db.playlists.delete(playlistId);
+}
+
+export async function removeFromPlaylist(playlistId: number, episodeId: string): Promise<void> {
+  await db.playlistItems
+    .where('[playlistId+episodeId]')
+    .equals([playlistId, episodeId])
+    .delete();
+}
