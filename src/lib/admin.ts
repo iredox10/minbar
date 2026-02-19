@@ -2,6 +2,9 @@ import { Client, Account, Databases, Storage, Query, ID, Permission, Role } from
 
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'muslim-central';
+const IMAGES_BUCKET = import.meta.env.VITE_APPWRITE_IMAGES_BUCKET || 'images';
+const AUDIO_BUCKET = import.meta.env.VITE_APPWRITE_AUDIO_BUCKET || 'audio';
 
 export const adminClient = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
@@ -11,16 +14,13 @@ export const adminAccount = new Account(adminClient);
 export const adminDatabases = new Databases(adminClient);
 export const adminStorage = new Storage(adminClient);
 
-export { Query };
+export { Query, DATABASE_ID, IMAGES_BUCKET, AUDIO_BUCKET };
 
-export const DATABASE_ID = 'muslim-central';
 export const SPEAKERS_COLLECTION = 'speakers';
 export const SERIES_COLLECTION = 'series';
 export const EPISODES_COLLECTION = 'episodes';
 export const DUAS_COLLECTION = 'duas';
 export const RADIO_COLLECTION = 'radio_stations';
-export const IMAGES_BUCKET = 'images';
-export const AUDIO_BUCKET = 'audio';
 
 export function isAdminConfigured(): boolean {
   return !!APPWRITE_PROJECT_ID;

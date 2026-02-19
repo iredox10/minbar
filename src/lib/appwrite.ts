@@ -3,6 +3,9 @@ import type { Speaker, Series, Episode, Dua, RadioStation } from '../types';
 
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'muslim-central';
+const IMAGES_BUCKET = import.meta.env.VITE_APPWRITE_IMAGES_BUCKET || 'images';
+const AUDIO_BUCKET = import.meta.env.VITE_APPWRITE_AUDIO_BUCKET || 'audio';
 
 export const appwriteClient = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
@@ -11,13 +14,13 @@ export const appwriteClient = new Client()
 export const databases = new Databases(appwriteClient);
 export const storage = new Storage(appwriteClient);
 
-export const DATABASE_ID = 'muslim-central';
+export { DATABASE_ID, IMAGES_BUCKET, AUDIO_BUCKET };
+
 export const SPEAKERS_COLLECTION = 'speakers';
 export const SERIES_COLLECTION = 'series';
 export const EPISODES_COLLECTION = 'episodes';
 export const DUAS_COLLECTION = 'duas';
 export const RADIO_COLLECTION = 'radio_stations';
-export const AUDIO_BUCKET_ID = 'audio';
 
 export function isAppwriteConfigured(): boolean {
   return !!APPWRITE_PROJECT_ID;
@@ -172,10 +175,10 @@ export async function getRadioStations(): Promise<RadioStation[]> {
 
 export async function getAudioUrl(fileId: string): Promise<string> {
   if (!isAppwriteConfigured()) return '';
-  return storage.getFileView(AUDIO_BUCKET_ID, fileId);
+  return storage.getFileView(AUDIO_BUCKET, fileId);
 }
 
-export function getImageUrl(fileId: string, bucketId: string = 'images'): string {
+export function getImageUrl(fileId: string, bucketId: string = IMAGES_BUCKET): string {
   if (!isAppwriteConfigured()) return '';
   return storage.getFileView(bucketId, fileId);
 }
