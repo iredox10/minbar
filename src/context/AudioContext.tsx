@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { audioManager } from '../lib/audio';
 import { updatePlaybackProgress } from '../lib/db';
+import { trackPlayStart } from '../lib/analytics';
 import type { CurrentTrack, PlayerState } from '../types';
 
 interface AudioContextType {
@@ -72,6 +73,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     try {
       setCurrentTrack(track);
       await audioManager.play(track, startPosition);
+      
+      if (track.type === 'episode' || track.type === 'radio') {
+        trackPlayStart(track.id, track.type, track.title);
+      }
     } catch (error) {
       console.error('Failed to play track:', error);
       setPlayerState('idle');

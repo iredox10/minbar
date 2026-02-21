@@ -11,3 +11,4 @@ export { AdminDuas } from './AdminDuas';
 export { AdminDuaForm } from './AdminDuaForm';
 export { AdminRadio } from './AdminRadio';
 export { AdminRadioForm } from './AdminRadioForm';
+export { AdminAnalytics } from './AdminAnalytics';

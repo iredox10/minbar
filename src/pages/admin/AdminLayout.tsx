@@ -11,13 +11,15 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  BarChart2
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { cn } from '../../lib/utils';
 
 const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { path: '/admin/analytics', icon: BarChart2, label: 'Analytics' },
   { path: '/admin/speakers', icon: Users, label: 'Speakers' },
   { path: '/admin/series', icon: BookOpen, label: 'Series' },
   { path: '/admin/episodes', icon: Play, label: 'Episodes' },

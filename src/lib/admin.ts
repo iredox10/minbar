@@ -14,7 +14,7 @@ export const adminAccount = new Account(adminClient);
 export const adminDatabases = new Databases(adminClient);
 export const adminStorage = new Storage(adminClient);
 
-export { Query, DATABASE_ID, IMAGES_BUCKET, AUDIO_BUCKET };
+export { Query, ID, DATABASE_ID, IMAGES_BUCKET, AUDIO_BUCKET };
 
 export const SPEAKERS_COLLECTION = 'speakers';
 export const SERIES_COLLECTION = 'series';

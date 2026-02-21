@@ -196,6 +196,23 @@ async function setup() {
     { type: 'boolean', key: 'isLive', required: false, default: true }
   ]);
 
+  // Analytics
+  await createCollection('analytics', 'Analytics', [
+    { type: 'string', key: 'eventType', size: 50, required: true },
+    { type: 'string', key: 'itemId', size: 100, required: false },
+    { type: 'string', key: 'itemType', size: 50, required: false },
+    { type: 'string', key: 'itemTitle', size: 500, required: false },
+    { type: 'integer', key: 'duration', required: false },
+    { type: 'string', key: 'userId', size: 100, required: false },
+    { type: 'string', key: 'sessionId', size: 100, required: false },
+    { type: 'datetime', key: 'timestamp', required: true }
+  ]);
+  await createIndexes('analytics', [
+    { key: 'event_type_index', type: 'key', attributes: ['eventType'] },
+    { key: 'timestamp_index', type: 'key', attributes: ['timestamp'], orders: ['DESC'] },
+    { key: 'item_index', type: 'key', attributes: ['itemId'] }
+  ]);
+
   // Create storage buckets
   console.log('\n🗑️ Creating storage buckets...\n');
   

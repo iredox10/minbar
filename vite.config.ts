@@ -61,5 +61,18 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-appwrite': ['appwrite'],
+          'vendor-recharts': ['recharts'],
+          'vendor-db': ['dexie', 'dexie-react-hooks']
+        }
+      }
+    }
   }
 })
