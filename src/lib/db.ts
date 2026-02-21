@@ -112,7 +112,11 @@ export async function getRecentHistory(limit: number = 20): Promise<PlaybackHist
   return db.playbackHistory.orderBy('playedAt').reverse().limit(limit).toArray();
 }
 
-export async function getSettings(): Promise<AppSettings> {
+export async function getSettings(): Promise<AppSettings | undefined> {
+  return db.settings.toCollection().first();
+}
+
+export async function getOrCreateSettings(): Promise<AppSettings> {
   const settings = await db.settings.toCollection().first();
   if (settings) return settings;
   
@@ -128,7 +132,17 @@ export async function getSettings(): Promise<AppSettings> {
 
 export async function updateSettings(updates: Partial<AppSettings>): Promise<void> {
   const settings = await getSettings();
-  await db.settings.update(settings.id!, updates);
+  if (settings?.id) {
+    await db.settings.update(settings.id, updates);
+  } else {
+    await db.settings.add({ 
+      theme: 'system',
+      playbackSpeed: 1,
+      downloadWifiOnly: true,
+      autoDownload: false,
+      ...updates 
+    } as AppSettings);
+  }
 }
 
 export async function createPlaylist(name: string, description?: string): Promise<number> {

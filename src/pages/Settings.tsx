@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
 import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders } from 'lucide-react';
@@ -19,11 +20,27 @@ const item = {
   show: { opacity: 1, y: 0 }
 };
 
-export function Settings() {
-  const settings = useLiveQuery(() => getSettings());
-  const { playbackSpeed, setPlaybackSpeed, sleepTimerRemaining, setSleepTimer, clearSleepTimer } = useAudio();
+const defaultSettings: AppSettings = {
+  theme: 'system',
+  playbackSpeed: 1,
+  downloadWifiOnly: true,
+  autoDownload: false
+};
 
-  const localSettings = settings || { theme: 'system' as const, playbackSpeed: 1, downloadWifiOnly: true, autoDownload: false };
+export function Settings() {
+  const rawSettings = useLiveQuery(() => getSettings());
+  const { playbackSpeed, setPlaybackSpeed, sleepTimerRemaining, setSleepTimer, clearSleepTimer } = useAudio();
+  const [initialized, setInitialized] = useState(false);
+
+  const settings = rawSettings || defaultSettings;
+
+  useEffect(() => {
+    if (!rawSettings && !initialized) {
+      updateSettings({}).then(() => setInitialized(true));
+    } else if (rawSettings) {
+      setInitialized(true);
+    }
+  }, [rawSettings, initialized]);
 
   const handleThemeChange = async (theme: 'light' | 'dark' | 'system') => {
     await updateSettings({ theme });
@@ -89,7 +106,7 @@ export function Settings() {
                   onClick={() => handleThemeChange(value as 'light' | 'dark' | 'system')}
                   className={cn(
                     "flex flex-col items-center gap-2 py-4 rounded-xl transition-all",
-                    localSettings.theme === value
+                    settings.theme === value
                       ? "bg-primary text-slate-900 shadow-lg shadow-primary/30"
                       : "bg-slate-800/50 text-slate-300 hover:bg-slate-700"
                   )}
@@ -205,7 +222,7 @@ export function Settings() {
               <div className="relative">
                 <input
                   type="checkbox"
-                  checked={localSettings.downloadWifiOnly ?? true}
+                  checked={settings.downloadWifiOnly ?? true}
                   onChange={(e) => handleToggle('downloadWifiOnly', e.target.checked)}
                   className="sr-only peer"
                 />
@@ -227,7 +244,7 @@ export function Settings() {
               <div className="relative">
                 <input
                   type="checkbox"
-                  checked={localSettings.autoDownload ?? false}
+                  checked={settings.autoDownload ?? false}
                   onChange={(e) => handleToggle('autoDownload', e.target.checked)}
                   className="sr-only peer"
                 />
