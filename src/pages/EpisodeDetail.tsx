@@ -29,8 +29,9 @@ export function EpisodeDetail() {
     currentTrack, playerState, position, duration, playbackSpeed, setPlaybackSpeed 
   } = useAudio();
   
-  const { downloading, progress, downloadEpisode, checkDownloaded, removeDownload } = useDownloads();
+  const { downloading, progress, downloadEpisode, checkDownloaded, removeDownload, getLocalUrl } = useDownloads();
   const [downloaded, setDownloaded] = useState(false);
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -52,6 +53,11 @@ export function EpisodeDetail() {
           
           const isDownloadedAlready = await checkDownloaded(id);
           setDownloaded(isDownloadedAlready);
+          
+          if (isDownloadedAlready) {
+            const url = await getLocalUrl(id);
+            setLocalUrl(url);
+          }
         }
       } catch (error) {
         console.error('Failed to load episode:', error);
@@ -61,15 +67,17 @@ export function EpisodeDetail() {
     }
     
     loadData();
-  }, [id, checkDownloaded]);
+  }, [id, checkDownloaded, getLocalUrl]);
 
   const handlePlay = async () => {
     if (!episode) return;
     
+    const audioToUse = localUrl || episode.audioUrl;
+    
     const track: CurrentTrack = {
       id: episode.$id,
       title: episode.title,
-      audioUrl: episode.audioUrl,
+      audioUrl: audioToUse,
       artworkUrl: series?.artworkUrl,
       speaker: series?.title,
       duration: episode.duration,
@@ -94,12 +102,15 @@ export function EpisodeDetail() {
     if (downloaded) {
       await removeDownload(episode.$id);
       setDownloaded(false);
+      setLocalUrl(null);
       toast.success('Download removed');
     } else {
       const success = await downloadEpisode(episode);
       if (success) {
         setDownloaded(true);
-        toast.success('Episode downloaded');
+        const url = await getLocalUrl(episode.$id);
+        setLocalUrl(url);
+        toast.success('Episode downloaded to device');
       } else {
         toast.error('Download failed');
       }

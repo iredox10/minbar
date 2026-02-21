@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Clock, Download, Heart, Share2, ChevronRight } from 'lucide-react';
 import { getSeriesById, getEpisodesBySeries, isAppwriteConfigured } from '../lib/appwrite';
-import { isFavorite, addFavorite, removeFavorite, isDownloaded } from '../lib/db';
+import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
 import type { Series, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
@@ -89,13 +89,17 @@ export function SeriesDetail() {
     }
   };
 
-  const handlePlayEpisode = (episode: Episode) => {
+  const handlePlayEpisode = async (episode: Episode) => {
     if (!series) return;
-    console.log('SeriesDetail: Playing episode:', episode.title, 'audioUrl:', episode.audioUrl);
+    
+    const download = await getDownload(episode.$id);
+    const audioToUse = download?.localBlobUrl || episode.audioUrl;
+    
+    console.log('SeriesDetail: Playing episode:', episode.title, 'audioUrl:', audioToUse);
     const track: CurrentTrack = {
       id: episode.$id,
       title: episode.title,
-      audioUrl: episode.audioUrl,
+      audioUrl: audioToUse,
       artworkUrl: series.artworkUrl,
       speaker: series.title,
       duration: episode.duration,

@@ -2,26 +2,70 @@ import { useState, useCallback } from 'react';
 import { saveDownload, isDownloaded, deleteDownload, getDownload } from '../lib/db';
 import type { Episode } from '../types';
 
+async function downloadToDevice(blob: Blob, filename: string): Promise<boolean> {
+  try {
+    const url = URL.createObjectURL(blob);
+    
+    if (navigator.share) {
+      const file = new File([blob], filename, { type: blob.type || 'audio/mpeg' });
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: filename
+          });
+          URL.revokeObjectURL(url);
+          return true;
+        }
+      } catch {
+        // Fall through to download link approach
+      }
+    }
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  } catch (error) {
+    console.error('Failed to download to device:', error);
+    return false;
+  }
+}
+
 export function useDownloads() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
   const downloadEpisode = useCallback(async (episode: Episode): Promise<boolean> => {
-    if (!episode.audioUrl) return false;
-    
-    const alreadyDownloaded = await isDownloaded(episode.$id);
-    if (alreadyDownloaded) return true;
+    if (!episode.audioUrl) {
+      console.error('Download: No audio URL for episode:', episode.title);
+      return false;
+    }
     
     setDownloading(episode.$id);
     setProgress(0);
     
+    console.log('Download: Starting download for:', episode.title, 'URL:', episode.audioUrl);
+    
     try {
       const response = await fetch(episode.audioUrl);
+      
+      if (!response.ok) {
+        console.error('Download: Fetch failed with status:', response.status);
+        return false;
+      }
+      
       const contentLength = response.headers.get('content-length');
       const total = contentLength ? parseInt(contentLength, 10) : 0;
       
       if (!response.body) {
-        throw new Error('No response body');
+        console.error('Download: No response body');
+        return false;
       }
       
       const reader = response.body.getReader();
@@ -40,7 +84,15 @@ export function useDownloads() {
         }
       }
       
-      const blob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+      console.log('Download: Downloaded', received, 'bytes');
+      
+      const extension = episode.audioUrl.split('.').pop()?.split('?')[0] || 'mp3';
+      const mimeType = extension === 'mp3' ? 'audio/mpeg' : `audio/${extension}`;
+      const blob = new Blob(chunks as BlobPart[], { type: mimeType });
+      const filename = `${episode.title.replace(/[^a-zA-Z0-9]/g, '_')}.${extension}`;
+      
+      console.log('Download: Blob created, size:', blob.size, 'type:', mimeType);
+      
       const localBlobUrl = URL.createObjectURL(blob);
       
       await saveDownload({
@@ -53,6 +105,11 @@ export function useDownloads() {
         downloadedAt: new Date(),
         fileSize: blob.size
       });
+      
+      console.log('Download: Saved to IndexedDB, now downloading to device...');
+      
+      const downloaded = await downloadToDevice(blob, filename);
+      console.log('Download: Device download result:', downloaded);
       
       return true;
     } catch (error) {
