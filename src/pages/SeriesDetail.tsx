@@ -43,6 +43,8 @@ export function SeriesDetail() {
           getSeriesById(id),
           getEpisodesBySeries(id)
         ]);
+        console.log('SeriesDetail: Series data:', seriesData);
+        console.log('SeriesDetail: Episodes data:', episodesData);
         setSeries(seriesData);
         setEpisodes(episodesData);
 
@@ -89,6 +91,7 @@ export function SeriesDetail() {
 
   const handlePlayEpisode = (episode: Episode) => {
     if (!series) return;
+    console.log('SeriesDetail: Playing episode:', episode.title, 'audioUrl:', episode.audioUrl);
     const track: CurrentTrack = {
       id: episode.$id,
       title: episode.title,

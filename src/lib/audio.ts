@@ -126,17 +126,33 @@ class AudioManager {
     return new Promise((resolve, reject) => {
       this.unload();
       
+      if (!track.audioUrl) {
+        console.error('AudioManager: No audio URL provided for track:', track.title);
+        this.listeners.onStateChange?.('idle');
+        reject(new Error('No audio URL provided'));
+        return;
+      }
+      
+      console.log('AudioManager: Loading track:', track.title, 'URL:', track.audioUrl);
       this.currentTrack = track;
       this.listeners.onStateChange?.('loading');
       
+      const audioUrl = track.audioUrl;
+      const extension = audioUrl.split('.').pop()?.toLowerCase().split('?')[0] || 'mp3';
+      const format = ['mp3', 'mpeg', 'wav', 'ogg', 'm4a', 'webm', 'aac'].includes(extension) 
+        ? extension 
+        : 'mp3';
+
       this.currentHowl = new Howl({
-        src: [track.audioUrl],
+        src: [audioUrl],
+        format: [format],
         html5: true,
         preload: true,
         volume: this._volume,
         rate: this._playbackSpeed,
         mute: this._muted,
         onload: () => {
+          console.log('AudioManager: Track loaded successfully');
           this.handleLoad();
           if (startPosition > 0) {
             this.currentHowl?.seek(startPosition);
@@ -147,10 +163,12 @@ class AudioManager {
         onpause: this.handlePause,
         onend: this.handleEnd,
         onplayerror: (id, error) => {
+          console.error('AudioManager: Play error:', error);
           this.handleError(id, error);
           reject(error);
         },
         onloaderror: (id, error) => {
+          console.error('AudioManager: Load error:', error);
           this.handleError(id, error);
           reject(error);
         }
