@@ -6,6 +6,17 @@ import { adminDatabases, uploadAudio, createEpisode, updateEpisode, EPISODES_COL
 import type { Episode, Series, Speaker } from '../../types';
 import { cn, slugify } from '../../lib/utils';
 
+function formatDurationAuto(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
 export function AdminEpisodeForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -88,6 +99,20 @@ export function AdminEpisodeForm() {
     }));
   }
 
+  function handleAudioUrlChange(url: string) {
+    setFormData(prev => ({ ...prev, audioUrl: url }));
+    
+    if (url) {
+      const audio = new Audio();
+      audio.src = url;
+      
+      audio.onloadedmetadata = () => {
+        const durationSeconds = Math.round(audio.duration);
+        setFormData(prev => ({ ...prev, duration: durationSeconds }));
+      };
+    }
+  }
+
   function handleContentTypeChange(type: 'series' | 'standalone') {
     setContentType(type);
     setFormData(prev => ({
@@ -105,7 +130,24 @@ export function AdminEpisodeForm() {
     setUploading(true);
     try {
       const url = await uploadAudio(file);
-      setFormData(prev => ({ ...prev, audioUrl: url }));
+      
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(file);
+      
+      audio.onloadedmetadata = () => {
+        const durationSeconds = Math.round(audio.duration);
+        setFormData(prev => ({ 
+          ...prev, 
+          audioUrl: url,
+          duration: durationSeconds
+        }));
+        URL.revokeObjectURL(audio.src);
+      };
+      
+      audio.onerror = () => {
+        setFormData(prev => ({ ...prev, audioUrl: url }));
+        URL.revokeObjectURL(audio.src);
+      };
     } catch (error) {
       console.error('Failed to upload audio:', error);
     } finally {
@@ -243,8 +285,10 @@ export function AdminEpisodeForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Duration (seconds)</label>
-              <input type="number" value={formData.duration} onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))} min="0" className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all" />
+              <label className="block text-sm text-slate-400 mb-2">Duration</label>
+              <div className="w-full px-4 py-3 bg-slate-700/30 border border-slate-600 rounded-xl text-slate-100">
+                {formData.duration > 0 ? formatDurationAuto(formData.duration) : 'Auto-calculated on upload'}
+              </div>
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-2">Published Date</label>
@@ -259,7 +303,7 @@ export function AdminEpisodeForm() {
 
           <div>
             <label className="block text-sm text-slate-400 mb-2">Audio URL (or upload above)</label>
-            <input type="url" value={formData.audioUrl} onChange={(e) => setFormData(prev => ({ ...prev, audioUrl: e.target.value }))} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all" placeholder="https://..." />
+            <input type="url" value={formData.audioUrl} onChange={(e) => handleAudioUrlChange(e.target.value)} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all" placeholder="https://..." />
           </div>
         </div>
 

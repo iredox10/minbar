@@ -53,3 +53,5 @@ dev-dist/
 
 # Misc
 .cache
+# Local Netlify folder
+.netlify
