@@ -43,20 +43,16 @@ export function useDownloads() {
 
   const downloadEpisode = useCallback(async (episode: Episode): Promise<boolean> => {
     if (!episode.audioUrl) {
-      console.error('Download: No audio URL for episode:', episode.title);
       return false;
     }
     
     setDownloading(episode.$id);
     setProgress(0);
     
-    console.log('Download: Starting download for:', episode.title, 'URL:', episode.audioUrl);
-    
     try {
       const response = await fetch(episode.audioUrl);
       
       if (!response.ok) {
-        console.error('Download: Fetch failed with status:', response.status);
         return false;
       }
       
@@ -64,7 +60,6 @@ export function useDownloads() {
       const total = contentLength ? parseInt(contentLength, 10) : 0;
       
       if (!response.body) {
-        console.error('Download: No response body');
         return false;
       }
       
@@ -84,14 +79,10 @@ export function useDownloads() {
         }
       }
       
-      console.log('Download: Downloaded', received, 'bytes');
-      
       const extension = episode.audioUrl.split('.').pop()?.split('?')[0] || 'mp3';
       const mimeType = extension === 'mp3' ? 'audio/mpeg' : `audio/${extension}`;
       const blob = new Blob(chunks as BlobPart[], { type: mimeType });
       const filename = `${episode.title.replace(/[^a-zA-Z0-9]/g, '_')}.${extension}`;
-      
-      console.log('Download: Blob created, size:', blob.size, 'type:', mimeType);
       
       const localBlobUrl = URL.createObjectURL(blob);
       
@@ -99,6 +90,7 @@ export function useDownloads() {
         episodeId: episode.$id,
         title: episode.title,
         seriesId: episode.seriesId,
+        speakerId: episode.speakerId,
         audioUrl: episode.audioUrl,
         localBlobUrl,
         duration: episode.duration,
@@ -106,10 +98,7 @@ export function useDownloads() {
         fileSize: blob.size
       });
       
-      console.log('Download: Saved to IndexedDB, now downloading to device...');
-      
-      const downloaded = await downloadToDevice(blob, filename);
-      console.log('Download: Device download result:', downloaded);
+      await downloadToDevice(blob, filename);
       
       return true;
     } catch (error) {

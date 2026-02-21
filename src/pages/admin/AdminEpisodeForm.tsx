@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
-import { adminDatabases, uploadAudio, createEpisode, updateEpisode, EPISODES_COLLECTION, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
-import type { Episode, Series } from '../../types';
+import { adminDatabases, uploadAudio, createEpisode, updateEpisode, EPISODES_COLLECTION, SERIES_COLLECTION, SPEAKERS_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
+import type { Episode, Series, Speaker } from '../../types';
 import { cn, slugify } from '../../lib/utils';
 
 export function AdminEpisodeForm() {
@@ -13,21 +13,26 @@ export function AdminEpisodeForm() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [speakerList, setSpeakerList] = useState<Speaker[]>([]);
+  const [contentType, setContentType] = useState<'series' | 'standalone'>('series');
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     seriesId: '',
+    speakerId: '',
     audioUrl: '',
     duration: 0,
     publishedAt: '',
     description: '',
-    episodeNumber: 1
+    episodeNumber: 1,
+    isStandalone: false
   });
 
   const isEditing = !!id;
 
   useEffect(() => {
     loadSeries();
+    loadSpeakers();
     if (id) loadEpisode();
   }, [id]);
 
@@ -40,6 +45,15 @@ export function AdminEpisodeForm() {
     }
   }
 
+  async function loadSpeakers() {
+    try {
+      const response = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [Query.limit(100)]);
+      setSpeakerList(response.documents as unknown as Speaker[]);
+    } catch (error) {
+      console.error('Failed to load speakers:', error);
+    }
+  }
+
   async function loadEpisode() {
     setLoading(true);
     try {
@@ -48,13 +62,16 @@ export function AdminEpisodeForm() {
       setFormData({
         title: episode.title,
         slug: episode.slug,
-        seriesId: episode.seriesId,
+        seriesId: episode.seriesId || '',
+        speakerId: episode.speakerId || '',
         audioUrl: episode.audioUrl,
         duration: episode.duration,
         publishedAt: episode.publishedAt ? episode.publishedAt.split('T')[0] : '',
         description: episode.description || '',
-        episodeNumber: episode.episodeNumber || 1
+        episodeNumber: episode.episodeNumber || 1,
+        isStandalone: episode.isStandalone || false
       });
+      setContentType(episode.isStandalone ? 'standalone' : 'series');
     } catch (error) {
       console.error('Failed to load episode:', error);
       navigate('/admin/episodes');
@@ -68,6 +85,16 @@ export function AdminEpisodeForm() {
       ...prev,
       title,
       slug: prev.slug || slugify(title)
+    }));
+  }
+
+  function handleContentTypeChange(type: 'series' | 'standalone') {
+    setContentType(type);
+    setFormData(prev => ({
+      ...prev,
+      isStandalone: type === 'standalone',
+      seriesId: type === 'standalone' ? '' : prev.seriesId,
+      speakerId: type === 'series' ? '' : prev.speakerId
     }));
   }
 
@@ -124,13 +151,43 @@ export function AdminEpisodeForm() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">{isEditing ? 'Edit Episode' : 'Add Episode'}</h1>
-          <p className="text-slate-400 mt-1">{isEditing ? 'Update episode information' : 'Create a new episode'}</p>
+          <h1 className="text-2xl font-bold text-slate-100">{isEditing ? 'Edit Audio' : 'Add Audio'}</h1>
+          <p className="text-slate-400 mt-1">{isEditing ? 'Update audio information' : 'Upload a new audio'}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 space-y-6">
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Content Type</label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => handleContentTypeChange('series')}
+                className={cn(
+                  "flex-1 py-3 px-4 rounded-xl border transition-all",
+                  contentType === 'series'
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "bg-slate-700/30 border-slate-600 text-slate-400 hover:border-slate-500"
+                )}
+              >
+                Part of a Series
+              </button>
+              <button
+                type="button"
+                onClick={() => handleContentTypeChange('standalone')}
+                className={cn(
+                  "flex-1 py-3 px-4 rounded-xl border transition-all",
+                  contentType === 'standalone'
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "bg-slate-700/30 border-slate-600 text-slate-400 hover:border-slate-500"
+                )}
+              >
+                Standalone (Speaker)
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm text-slate-400 mb-2">Audio File</label>
             {formData.audioUrl ? (
@@ -152,7 +209,7 @@ export function AdminEpisodeForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-2">Title *</label>
-              <input type="text" value={formData.title} onChange={(e) => handleTitleChange(e.target.value)} required className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all" placeholder="Episode title" />
+              <input type="text" value={formData.title} onChange={(e) => handleTitleChange(e.target.value)} required className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all" placeholder="Audio title" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-2">Slug *</label>
@@ -160,19 +217,29 @@ export function AdminEpisodeForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {contentType === 'series' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Series *</label>
+                <select value={formData.seriesId} onChange={(e) => setFormData(prev => ({ ...prev, seriesId: e.target.value }))} required className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all">
+                  <option value="">Select a series</option>
+                  {seriesList.map(s => <option key={s.$id} value={s.$id}>{s.title}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Episode Number</label>
+                <input type="number" value={formData.episodeNumber} onChange={(e) => setFormData(prev => ({ ...prev, episodeNumber: parseInt(e.target.value) || 1 }))} min="1" className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all" />
+              </div>
+            </div>
+          ) : (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Series *</label>
-              <select value={formData.seriesId} onChange={(e) => setFormData(prev => ({ ...prev, seriesId: e.target.value }))} required className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all">
-                <option value="">Select a series</option>
-                {seriesList.map(s => <option key={s.$id} value={s.$id}>{s.title}</option>)}
+              <label className="block text-sm text-slate-400 mb-2">Speaker *</label>
+              <select value={formData.speakerId} onChange={(e) => setFormData(prev => ({ ...prev, speakerId: e.target.value }))} required className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all">
+                <option value="">Select a speaker</option>
+                {speakerList.map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Episode Number</label>
-              <input type="number" value={formData.episodeNumber} onChange={(e) => setFormData(prev => ({ ...prev, episodeNumber: parseInt(e.target.value) || 1 }))} min="1" className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 focus:outline-none focus:border-primary/50 transition-all" />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -187,7 +254,7 @@ export function AdminEpisodeForm() {
 
           <div>
             <label className="block text-sm text-slate-400 mb-2">Description</label>
-            <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={4} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none" placeholder="Episode description..." />
+            <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={4} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none" placeholder="Audio description..." />
           </div>
 
           <div>
@@ -199,7 +266,7 @@ export function AdminEpisodeForm() {
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => navigate('/admin/episodes')} className="px-6 py-3 bg-slate-700 text-slate-300 rounded-xl font-medium hover:bg-slate-600 transition-all">Cancel</button>
           <motion.button type="submit" disabled={saving} whileHover={{ scale: saving ? 1 : 1.02 }} whileTap={{ scale: saving ? 1 : 0.98 }} className={cn("flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all", saving ? "bg-slate-600 text-slate-400 cursor-not-allowed" : "bg-primary text-slate-900 hover:bg-primary-light")}>
-            {saving ? <><Loader2 size={18} className="animate-spin" />Saving...</> : <><Save size={18} />{isEditing ? 'Update Episode' : 'Create Episode'}</>}
+            {saving ? <><Loader2 size={18} className="animate-spin" />Saving...</> : <><Save size={18} />{isEditing ? 'Update Audio' : 'Create Audio'}</>}
           </motion.button>
         </div>
       </form>

@@ -127,13 +127,11 @@ class AudioManager {
       this.unload();
       
       if (!track.audioUrl) {
-        console.error('AudioManager: No audio URL provided for track:', track.title);
         this.listeners.onStateChange?.('idle');
         reject(new Error('No audio URL provided'));
         return;
       }
       
-      console.log('AudioManager: Loading track:', track.title, 'URL:', track.audioUrl);
       this.currentTrack = track;
       this.listeners.onStateChange?.('loading');
       
@@ -152,7 +150,6 @@ class AudioManager {
         rate: this._playbackSpeed,
         mute: this._muted,
         onload: () => {
-          console.log('AudioManager: Track loaded successfully');
           this.handleLoad();
           if (startPosition > 0) {
             this.currentHowl?.seek(startPosition);

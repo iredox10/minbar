@@ -24,12 +24,14 @@ export interface Episode {
   $id: string;
   title: string;
   slug: string;
-  seriesId: string;
+  seriesId?: string;
+  speakerId?: string;
   audioUrl: string;
   duration: number;
   publishedAt: string;
   description: string;
   episodeNumber: number;
+  isStandalone?: boolean;
 }
 
 export interface Dua {
@@ -59,7 +61,8 @@ export interface DownloadedEpisode {
   id?: number;
   episodeId: string;
   title: string;
-  seriesId: string;
+  seriesId?: string;
+  speakerId?: string;
   audioUrl: string;
   localBlobUrl: string;
   duration: number;

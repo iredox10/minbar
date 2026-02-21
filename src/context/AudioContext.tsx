@@ -72,7 +72,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const play = useCallback(async (track: CurrentTrack, startPosition: number = 0) => {
     try {
       if (!track.audioUrl) {
-        console.error('AudioContext: Cannot play - no audio URL for track:', track.title);
         return;
       }
       setCurrentTrack(track);

@@ -105,6 +105,16 @@ export async function getEpisodesBySeries(seriesId: string): Promise<Episode[]> 
   return response.documents as unknown as Episode[];
 }
 
+export async function getStandaloneEpisodesBySpeaker(speakerId: string): Promise<Episode[]> {
+  if (!isAppwriteConfigured()) return [];
+  const response = await databases.listDocuments(
+    DATABASE_ID,
+    EPISODES_COLLECTION,
+    [Query.equal('speakerId', speakerId), Query.equal('isStandalone', true), Query.orderDesc('publishedAt')]
+  );
+  return response.documents as unknown as Episode[];
+}
+
 export async function getEpisodeById(episodeId: string): Promise<Episode | null> {
   if (!isAppwriteConfigured()) return null;
   try {

@@ -45,8 +45,10 @@ export function EpisodeDetail() {
         if (episodeData) {
           setEpisode(episodeData);
           
-          const seriesData = await getSeriesById(episodeData.seriesId);
-          if (seriesData) setSeries(seriesData);
+          if (episodeData.seriesId) {
+            const seriesData = await getSeriesById(episodeData.seriesId);
+            if (seriesData) setSeries(seriesData);
+          }
           
           const isFav = await isFavorite('episode', id);
           setFavorited(isFav);

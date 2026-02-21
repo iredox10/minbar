@@ -43,8 +43,6 @@ export function SeriesDetail() {
           getSeriesById(id),
           getEpisodesBySeries(id)
         ]);
-        console.log('SeriesDetail: Series data:', seriesData);
-        console.log('SeriesDetail: Episodes data:', episodesData);
         setSeries(seriesData);
         setEpisodes(episodesData);
 
@@ -95,7 +93,6 @@ export function SeriesDetail() {
     const download = await getDownload(episode.$id);
     const audioToUse = download?.localBlobUrl || episode.audioUrl;
     
-    console.log('SeriesDetail: Playing episode:', episode.title, 'audioUrl:', audioToUse);
     const track: CurrentTrack = {
       id: episode.$id,
       title: episode.title,

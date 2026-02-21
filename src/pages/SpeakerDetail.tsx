@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Play } from 'lucide-react';
-import { getSpeakerBySlug, getSeriesBySpeaker, isAppwriteConfigured } from '../lib/appwrite';
-import type { Speaker, Series } from '../types';
+import { ArrowLeft, BookOpen, Play, Clock, Music } from 'lucide-react';
+import { getSpeakerBySlug, getSeriesBySpeaker, getStandaloneEpisodesBySpeaker, isAppwriteConfigured } from '../lib/appwrite';
+import { useAudio } from '../context/AudioContext';
+import type { Speaker, Series, Episode, CurrentTrack } from '../types';
+import { formatDuration, cn } from '../lib/utils';
 
 const container = {
   hidden: { opacity: 0 },
@@ -22,7 +24,10 @@ export function SpeakerDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
   const [series, setSeries] = useState<Series[]>([]);
+  const [standaloneEpisodes, setStandaloneEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const { play, currentTrack, playerState } = useAudio();
 
   useEffect(() => {
     async function loadSpeaker() {
@@ -35,8 +40,12 @@ export function SpeakerDetail() {
         const speakerData = await getSpeakerBySlug(slug);
         if (speakerData) {
           setSpeaker(speakerData);
-          const seriesData = await getSeriesBySpeaker(speakerData.$id);
+          const [seriesData, episodesData] = await Promise.all([
+            getSeriesBySpeaker(speakerData.$id),
+            getStandaloneEpisodesBySpeaker(speakerData.$id)
+          ]);
           setSeries(seriesData);
+          setStandaloneEpisodes(episodesData);
         }
       } catch (error) {
         console.error('Failed to load speaker:', error);
@@ -47,6 +56,22 @@ export function SpeakerDetail() {
 
     loadSpeaker();
   }, [slug]);
+
+  const handlePlayEpisode = (episode: Episode) => {
+    if (!speaker) return;
+    const track: CurrentTrack = {
+      id: episode.$id,
+      title: episode.title,
+      audioUrl: episode.audioUrl,
+      artworkUrl: speaker.imageUrl,
+      speaker: speaker.name,
+      duration: episode.duration,
+      type: 'episode'
+    };
+    play(track);
+  };
+
+  const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
 
   if (loading) {
     return (
@@ -119,8 +144,70 @@ export function SpeakerDetail() {
         </div>
       </div>
 
-      <div className="px-4 pb-24">
-        {series.length > 0 ? (
+      <div className="px-4 pb-24 space-y-8">
+        {/* Standalone Audio */}
+        {standaloneEpisodes.length > 0 && (
+          <motion.section
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Music size={18} className="text-violet-400" />
+              <h2 className="text-lg font-semibold text-slate-100">
+                Audio ({standaloneEpisodes.length})
+              </h2>
+            </div>
+
+            <div className="space-y-3">
+              {standaloneEpisodes.map((episode) => (
+                <motion.div
+                  key={episode.$id}
+                  variants={item}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "glass-card rounded-2xl p-4 group cursor-pointer",
+                    isPlaying(episode.$id) && "border-primary/50 bg-primary/5"
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handlePlayEpisode(episode)}
+                      className={cn(
+                        "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all",
+                        isPlaying(episode.$id)
+                          ? "bg-primary text-slate-900 shadow-lg shadow-primary/30"
+                          : "bg-slate-800 text-slate-300 group-hover:bg-primary group-hover:text-slate-900"
+                      )}
+                    >
+                      <Play size={16} className="ml-0.5" />
+                    </motion.button>
+
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/podcasts/episode/${episode.$id}`}>
+                        <p className="font-medium text-slate-100 truncate group-hover:text-primary transition-colors">
+                          {episode.title}
+                        </p>
+                      </Link>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Clock size={10} />
+                          {formatDuration(episode.duration)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Series */}
+        {series.length > 0 && (
           <motion.section
             variants={container}
             initial="hidden"
@@ -172,10 +259,12 @@ export function SpeakerDetail() {
               ))}
             </div>
           </motion.section>
-        ) : (
+        )}
+
+        {series.length === 0 && standaloneEpisodes.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">No series available yet</p>
+            <p className="text-slate-400">No content available yet</p>
           </div>
         )}
       </div>
