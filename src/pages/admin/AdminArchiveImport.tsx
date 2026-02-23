@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Loader2, CheckSquare, Square, Upload, ExternalLink, AlertCircle, Music, Clock, HardDrive } from 'lucide-react';
+import { Search, Loader2, CheckSquare, Square, Upload, ExternalLink, AlertCircle, Music, Clock, HardDrive, Plus, ChevronDown } from 'lucide-react';
 import { fetchArchiveMetadata, parseArchiveItem, type ParsedArchiveItem } from '../../lib/archive';
 import { createSpeaker, createSeries, createEpisode, adminDatabases, SPEAKERS_COLLECTION, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import { cn, slugify } from '../../lib/utils';
 import { toast } from 'sonner';
 
+interface Speaker {
+  $id: string;
+  name: string;
+  slug: string;
+}
+
 interface EditableSeriesInfo {
   title: string;
+  speakerId: string;
   speakerName: string;
   description: string;
   category: string;
@@ -39,23 +46,45 @@ export function AdminArchiveImport() {
   const [manualJson, setManualJson] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [showSpeakerDropdown, setShowSpeakerDropdown] = useState(false);
+  const [newSpeakerMode, setNewSpeakerMode] = useState(false);
   const [seriesInfo, setSeriesInfo] = useState<EditableSeriesInfo>({
     title: '',
+    speakerId: '',
     speakerName: '',
     description: '',
     category: 'Lectures'
   });
   
   useEffect(() => {
+    loadSpeakers();
+  }, []);
+  
+  useEffect(() => {
     if (parsedItem) {
       setSeriesInfo({
         title: parsedItem.title,
+        speakerId: '',
         speakerName: parsedItem.creator,
         description: parsedItem.description?.substring(0, 5000) || '',
         category: 'Lectures'
       });
+      setNewSpeakerMode(true);
     }
   }, [parsedItem]);
+  
+  async function loadSpeakers() {
+    try {
+      const response = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [
+        Query.orderAsc('name'),
+        Query.limit(500)
+      ]);
+      setSpeakers(response.documents as unknown as Speaker[]);
+    } catch (error) {
+      console.error('Failed to load speakers:', error);
+    }
+  }
 
   async function handleFetch() {
     if (!identifier.trim()) return
@@ -92,10 +121,12 @@ export function AdminArchiveImport() {
       setParsedItem(parsed);
       setSeriesInfo({
         title: parsed.title,
+        speakerId: '',
         speakerName: parsed.creator,
         description: parsed.description?.substring(0, 5000) || '',
         category: 'Lectures'
       });
+      setNewSpeakerMode(true);
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
     } catch (err: any) {
       console.error('Fetch error:', err);
@@ -144,10 +175,12 @@ export function AdminArchiveImport() {
       setParsedItem(parsed);
       setSeriesInfo({
         title: parsed.title,
+        speakerId: '',
         speakerName: parsed.creator,
         description: parsed.description?.substring(0, 5000) || '',
         category: 'Lectures'
       });
+      setNewSpeakerMode(true);
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
       setError(null);
       setShowManualInput(false);
@@ -165,23 +198,29 @@ export function AdminArchiveImport() {
     
     try {
       let speakerId: string | undefined;
-      const speakerSlug = slugify(seriesInfo.speakerName);
       
-      const existingSpeakers = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [
-        Query.equal('slug', speakerSlug),
-        Query.limit(1)
-      ]);
-      
-      if (existingSpeakers.documents.length > 0) {
-        speakerId = existingSpeakers.documents[0].$id;
+      if (seriesInfo.speakerId) {
+        speakerId = seriesInfo.speakerId;
       } else {
-        speakerId = await createSpeaker({
-          name: seriesInfo.speakerName,
-          slug: speakerSlug,
-          bio: '',
-          imageUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
-          featured: false
-        });
+        const speakerSlug = slugify(seriesInfo.speakerName);
+        
+        const existingSpeakers = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [
+          Query.equal('slug', speakerSlug),
+          Query.limit(1)
+        ]);
+        
+        if (existingSpeakers.documents.length > 0) {
+          speakerId = existingSpeakers.documents[0].$id;
+        } else {
+          speakerId = await createSpeaker({
+            name: seriesInfo.speakerName,
+            slug: speakerSlug,
+            bio: '',
+            imageUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
+            featured: false
+          });
+          await loadSpeakers();
+        }
       }
 
       let seriesId: string | undefined;
@@ -374,25 +413,112 @@ export function AdminArchiveImport() {
                       type="text"
                       value={seriesInfo.title}
                       onChange={(e) => setSeriesInfo({ ...seriesInfo, title: e.target.value })}
-                      className="text-xl font-bold text-slate-100 bg-transparent border-b border-slate-600 rounded-lg px-2 py-1"
+                      className="text-xl font-bold text-slate-100 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 w-full"
                     />
                   ) : (
                     <h2 className="text-xl font-bold text-slate-100">
-                      {parsedItem.title}
+                      {seriesInfo.title}
                     </h2>
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-primary">{seriesInfo.speakerName}</span>
-                  {editMode && (
-                    <input
-                      type="text"
-                      value={seriesInfo.speakerName}
-                      onChange={(e) => setSeriesInfo({ ...seriesInfo, speakerName: e.target.value })}
-                      className="text-primary bg-transparent border-b border-slate-600 rounded px-2 py-1"
-                    />
-                  )}
-                </div>
+                
+                {/* Speaker Selection */}
+                {editMode && (
+                  <div className="mt-3">
+                    <label className="block text-sm text-slate-400 mb-2">Speaker</label>
+                    <div className="flex gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewSpeakerMode(false)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                          !newSpeakerMode ? "bg-primary text-slate-900" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700"
+                        )}
+                      >
+                        Select Existing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewSpeakerMode(true);
+                          setSeriesInfo({ ...seriesInfo, speakerId: '' });
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                          newSpeakerMode ? "bg-primary text-slate-900" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700"
+                        )}
+                      >
+                        <Plus size={14} className="inline mr-1" />
+                        Add New
+                      </button>
+                    </div>
+                    
+                    {!newSpeakerMode ? (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowSpeakerDropdown(!showSpeakerDropdown)}
+                          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 text-left flex items-center justify-between"
+                        >
+                          <span>
+                            {seriesInfo.speakerId 
+                              ? speakers.find(s => s.$id === seriesInfo.speakerId)?.name || 'Select speaker'
+                              : 'Select a speaker'
+                            }
+                          </span>
+                          <ChevronDown size={18} className="text-slate-400" />
+                        </button>
+                        
+                        {showSpeakerDropdown && (
+                          <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-600 rounded-xl max-h-60 overflow-y-auto shadow-lg">
+                            {speakers.length === 0 ? (
+                              <p className="px-4 py-3 text-slate-400 text-sm">No speakers found</p>
+                            ) : (
+                              speakers.map(speaker => (
+                                <button
+                                  key={speaker.$id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSeriesInfo({ ...seriesInfo, speakerId: speaker.$id, speakerName: speaker.name });
+                                    setShowSpeakerDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-2.5 text-left text-sm hover:bg-slate-700/50 transition-colors",
+                                    seriesInfo.speakerId === speaker.$id ? "text-primary bg-primary/10" : "text-slate-200"
+                                  )}
+                                >
+                                  {speaker.name}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={seriesInfo.speakerName}
+                        onChange={(e) => setSeriesInfo({ ...seriesInfo, speakerName: e.target.value, speakerId: '' })}
+                        placeholder="Enter new speaker name"
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
+                      />
+                    )}
+                  </div>
+                )}
+                
+                {!editMode && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-primary">
+                      {seriesInfo.speakerId 
+                        ? speakers.find(s => s.$id === seriesInfo.speakerId)?.name || seriesInfo.speakerName
+                        : seriesInfo.speakerName
+                      }
+                    </span>
+                    {seriesInfo.speakerId && (
+                      <span className="text-xs text-slate-500">(existing)</span>
+                    )}
+                  </div>
+                )}
                 {editMode && (
                   <div className="mt-3">
                     <label className="block text-sm text-slate-400 mb-2">Category</label>
@@ -535,7 +661,12 @@ export function AdminArchiveImport() {
           {/* Import Button */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-400">
-              This will create a speaker "{seriesInfo.speakerName}", a series "{seriesInfo.title}", and {selectedFiles.size} episodes.
+              {seriesInfo.speakerId ? (
+                <>Using existing speaker "<span className="text-primary">{speakers.find(s => s.$id === seriesInfo.speakerId)?.name}</span>"</>
+              ) : (
+                <>Will create new speaker "<span className="text-primary">{seriesInfo.speakerName}</span>"</>
+              )}
+              , series "<span className="text-slate-200">{seriesInfo.title}</span>", and {selectedFiles.size} episodes.
             </p>
             <motion.button
               whileHover={{ scale: importing ? 1 : 1.02 }}
