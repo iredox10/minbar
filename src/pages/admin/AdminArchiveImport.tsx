@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Loader2, CheckSquare, Square, Upload, ExternalLink, AlertCircle, Music, Clock, HardDrive } from 'lucide-react';
 import { fetchArchiveMetadata, parseArchiveItem, type ParsedArchiveItem } from '../../lib/archive';
 import { createSpeaker, createSeries, createEpisode, adminDatabases, SPEAKERS_COLLECTION, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import { cn, slugify } from '../../lib/utils';
 import { toast } from 'sonner';
+
+interface EditableSeriesInfo {
+  title: string;
+  speakerName: string;
+  description: string;
+  category: string;
+}
+
+const CATEGORIES = [
+  'Lectures',
+  'Quran',
+  'Seerah',
+  'Fiqh',
+  'Aqeedah',
+  'Tafsir',
+  'Hadith',
+  'Dua',
+  'History',
+  'Family',
+  'Youth',
+  'Other'
+];
 
 export function AdminArchiveImport() {
   const [identifier, setIdentifier] = useState('');
@@ -16,9 +38,27 @@ export function AdminArchiveImport() {
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const [manualJson, setManualJson] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [seriesInfo, setSeriesInfo] = useState<EditableSeriesInfo>({
+    title: '',
+    speakerName: '',
+    description: '',
+    category: 'Lectures'
+  });
+  
+  useEffect(() => {
+    if (parsedItem) {
+      setSeriesInfo({
+        title: parsedItem.title,
+        speakerName: parsedItem.creator,
+        description: parsedItem.description?.substring(0, 5000) || '',
+        category: 'Lectures'
+      });
+    }
+  }, [parsedItem]);
 
   async function handleFetch() {
-    if (!identifier.trim()) return;
+    if (!identifier.trim()) return
     
     setLoading(true);
     setError(null);
@@ -34,7 +74,6 @@ export function AdminArchiveImport() {
         return;
       }
       
-      // Log the actual structure
       console.log('Metadata keys:', Object.keys(metadata));
       console.log('Files count:', metadata.files?.length);
       console.log('First few files:', metadata.files?.slice?.(0, 5));
@@ -51,6 +90,12 @@ export function AdminArchiveImport() {
       }
       
       setParsedItem(parsed);
+      setSeriesInfo({
+        title: parsed.title,
+        speakerName: parsed.creator,
+        description: parsed.description?.substring(0, 5000) || '',
+        category: 'Lectures'
+      });
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
     } catch (err: any) {
       console.error('Fetch error:', err);
@@ -59,7 +104,7 @@ export function AdminArchiveImport() {
       setLoading(false);
     }
   }
-
+  
   function toggleFile(index: number) {
     const newSelected = new Set(selectedFiles);
     if (newSelected.has(index)) {
@@ -69,7 +114,7 @@ export function AdminArchiveImport() {
     }
     setSelectedFiles(newSelected);
   }
-
+  
   function toggleAll() {
     if (parsedItem) {
       if (selectedFiles.size === parsedItem.audioFiles.length) {
@@ -79,9 +124,9 @@ export function AdminArchiveImport() {
       }
     }
   }
-
+  
   function handleManualJsonParse() {
-    if (!manualJson.trim()) return;
+    if (!manualJson.trim()) return
     
     try {
       const metadata = JSON.parse(manualJson);
@@ -97,6 +142,12 @@ export function AdminArchiveImport() {
       }
       
       setParsedItem(parsed);
+      setSeriesInfo({
+        title: parsed.title,
+        speakerName: parsed.creator,
+        description: parsed.description?.substring(0, 5000) || '',
+        category: 'Lectures'
+      });
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
       setError(null);
       setShowManualInput(false);
@@ -105,17 +156,16 @@ export function AdminArchiveImport() {
       setError(`Invalid JSON: ${err.message}`);
     }
   }
-
+  
   async function handleImport() {
-    if (!parsedItem || selectedFiles.size === 0) return;
+    if (!parsedItem || selectedFiles.size === 0) return
     
     setImporting(true);
     setImportProgress({ current: 0, total: selectedFiles.size });
     
     try {
-      // Find or create speaker
       let speakerId: string | undefined;
-      const speakerSlug = slugify(parsedItem.creator);
+      const speakerSlug = slugify(seriesInfo.speakerName);
       
       const existingSpeakers = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [
         Query.equal('slug', speakerSlug),
@@ -126,7 +176,7 @@ export function AdminArchiveImport() {
         speakerId = existingSpeakers.documents[0].$id;
       } else {
         speakerId = await createSpeaker({
-          name: parsedItem.creator,
+          name: seriesInfo.speakerName,
           slug: speakerSlug,
           bio: '',
           imageUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
@@ -134,9 +184,8 @@ export function AdminArchiveImport() {
         });
       }
 
-      // Find or create series
       let seriesId: string | undefined;
-      const seriesSlug = slugify(parsedItem.title);
+      const seriesSlug = slugify(seriesInfo.title);
       
       const existingSeries = await adminDatabases.listDocuments(DATABASE_ID, SERIES_COLLECTION, [
         Query.equal('slug', seriesSlug),
@@ -147,17 +196,16 @@ export function AdminArchiveImport() {
         seriesId = existingSeries.documents[0].$id;
       } else {
         seriesId = await createSeries({
-          title: parsedItem.title,
+          title: seriesInfo.title,
           slug: seriesSlug,
           speakerId: speakerId,
-          description: parsedItem.description?.substring(0, 5000) || '',
+          description: seriesInfo.description?.substring(0, 5000) || '',
           artworkUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
-          category: 'Lectures',
+          category: seriesInfo.category,
           episodeCount: selectedFiles.size
         });
       }
 
-      // Import selected audio files as episodes
       const filesToImport = parsedItem.audioFiles.filter((_, i) => selectedFiles.has(i));
       
       for (let idx = 0; idx < filesToImport.length; idx++) {
@@ -188,7 +236,7 @@ export function AdminArchiveImport() {
       setImportProgress(null);
     }
   }
-
+  
   function formatFileSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -302,23 +350,89 @@ export function AdminArchiveImport() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Series Info */}
+          {/* Series Info - Editable */}
           <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
             <div className="flex items-start gap-4">
-              <img
-                src={`https://archive.org/services/img/${parsedItem.identifier}`}
-                alt={parsedItem.title}
-                className="w-24 h-24 rounded-xl object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96?text=No+Image';
-                }}
-              />
+              {editMode ? (
+                <div className="w-24 h-24 rounded-xl bg-slate-700 flex items-center justify-center">
+                  <Upload size={24} className="text-slate-400" />
+                </div>
+              ) : (
+                <img
+                  src={`https://archive.org/services/img/${parsedItem.identifier}`}
+                  alt={parsedItem.title}
+                  className="w-24 h-24 rounded-xl object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96?text=No+Image';
+                  }}
+                />
+              )}
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-slate-100">{parsedItem.title}</h2>
-                <p className="text-primary mt-1">{parsedItem.creator}</p>
-                {parsedItem.description && (
-                  <p className="text-sm text-slate-400 mt-2 line-clamp-2">{parsedItem.description}</p>
+                <div className="flex items-center gap-2 mb-2">
+                  {editMode ? (
+                    <input
+                      type="text"
+                      value={seriesInfo.title}
+                      onChange={(e) => setSeriesInfo({ ...seriesInfo, title: e.target.value })}
+                      className="text-xl font-bold text-slate-100 bg-transparent border-b border-slate-600 rounded-lg px-2 py-1"
+                    />
+                  ) : (
+                    <h2 className="text-xl font-bold text-slate-100">
+                      {parsedItem.title}
+                    </h2>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-primary">{seriesInfo.speakerName}</span>
+                  {editMode && (
+                    <input
+                      type="text"
+                      value={seriesInfo.speakerName}
+                      onChange={(e) => setSeriesInfo({ ...seriesInfo, speakerName: e.target.value })}
+                      className="text-primary bg-transparent border-b border-slate-600 rounded px-2 py-1"
+                    />
+                  )}
+                </div>
+                {editMode && (
+                  <div className="mt-3">
+                    <label className="block text-sm text-slate-400 mb-2">Category</label>
+                    <div className="flex flex-wrap gap-2">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSeriesInfo({ ...seriesInfo, category: cat })}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                            seriesInfo.category === cat
+                              ? "bg-primary text-slate-900"
+                              : "bb-slate-700/50 text-slate-300 hover:bg-slate-700"
+                          )}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
+                {editMode && (
+                  <div className="mt-3">
+                    <label className="block text-sm text-slate-400 mb-2">Description</label>
+                    <textarea
+                      value={seriesInfo.description}
+                      onChange={(e) => setSeriesInfo({ ...seriesInfo, description: e.target.value })}
+                      rows={4}
+                      className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm"
+                    />
+                  </div>
+                )}
+                {!editMode && (
+                  <p className="text-sm text-slate-400 mt-2 line-clamp-2">
+                    {seriesInfo.description?.substring(0, 200)}
+                    {seriesInfo.description?.length > 200 ? '...' : ''}
+                  </p>
+                )}
+                
                 <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
                   <span className="flex items-center gap-1">
                     <Music size={14} />
@@ -335,6 +449,16 @@ export function AdminArchiveImport() {
                   </a>
                 </div>
               </div>
+              
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setEditMode(!editMode)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {editMode ? 'Cancel' : 'Edit Info'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -344,12 +468,23 @@ export function AdminArchiveImport() {
               <h3 className="font-semibold text-slate-100">
                 Audio Files ({selectedFiles.size} of {parsedItem.audioFiles.length} selected)
               </h3>
-              <button
-                onClick={toggleAll}
-                className="text-sm text-primary hover:underline"
-              >
-                {selectedFiles.size === parsedItem.audioFiles.length ? 'Deselect All' : 'Select All'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={toggleAll}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {selectedFiles.size === parsedItem.audioFiles.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFiles(new Set())}
+                    className="text-sm text-slate-400 hover:text-slate-300"
+                  >
+                    Clear selection
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="max-h-96 overflow-y-auto">
@@ -400,7 +535,7 @@ export function AdminArchiveImport() {
           {/* Import Button */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-400">
-              This will create a speaker, series, and {selectedFiles.size} episodes.
+              This will create a speaker "{seriesInfo.speakerName}", a series "{seriesInfo.title}", and {selectedFiles.size} episodes.
             </p>
             <motion.button
               whileHover={{ scale: importing ? 1 : 1.02 }}
