@@ -132,6 +132,9 @@ class AudioManager {
         return;
       }
       
+      console.log('AudioManager: Loading track:', track.title);
+      console.log('AudioManager: Audio URL:', track.audioUrl);
+      
       this.currentTrack = track;
       this.listeners.onStateChange?.('loading');
       
@@ -140,6 +143,8 @@ class AudioManager {
       const format = ['mp3', 'mpeg', 'wav', 'ogg', 'm4a', 'webm', 'aac'].includes(extension) 
         ? extension 
         : 'mp3';
+      
+      console.log('AudioManager: Detected format:', format);
 
       this.currentHowl = new Howl({
         src: [audioUrl],
@@ -149,7 +154,14 @@ class AudioManager {
         volume: this._volume,
         rate: this._playbackSpeed,
         mute: this._muted,
+        xhr: {
+          method: 'GET',
+          headers: {
+            'Accept': 'audio/*'
+          }
+        },
         onload: () => {
+          console.log('AudioManager: Loaded successfully, duration:', this.currentHowl?.duration());
           this.handleLoad();
           if (startPosition > 0) {
             this.currentHowl?.seek(startPosition);

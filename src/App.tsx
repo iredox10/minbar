@@ -35,6 +35,7 @@ const AdminDuaForm = lazy(() => import('./pages/admin/AdminDuaForm').then(m => (
 const AdminRadio = lazy(() => import('./pages/admin/AdminRadio').then(m => ({ default: m.AdminRadio })));
 const AdminRadioForm = lazy(() => import('./pages/admin/AdminRadioForm').then(m => ({ default: m.AdminRadioForm })));
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
+const AdminArchiveImport = lazy(() => import('./pages/admin/AdminArchiveImport').then(m => ({ default: m.AdminArchiveImport })));
 
 function PageLoader() {
   return (
@@ -79,6 +80,7 @@ function AdminRoutes() {
           <Route path="radio" element={<AdminRadio />} />
           <Route path="radio/new" element={<AdminRadioForm />} />
           <Route path="radio/:id" element={<AdminRadioForm />} />
+          <Route path="import" element={<AdminArchiveImport />} />
         </Route>
       </Routes>
     </Suspense>
