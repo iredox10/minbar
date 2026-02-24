@@ -21,6 +21,8 @@ const Duas = lazy(() => import('./pages/Duas').then(m => ({ default: m.Duas })))
 const Downloads = lazy(() => import('./pages/Downloads').then(m => ({ default: m.Downloads })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const EpisodeDetail = lazy(() => import('./pages/EpisodeDetail').then(m => ({ default: m.EpisodeDetail })));
+const Series = lazy(() => import('./pages/Series').then(m => ({ default: m.Series })));
+const LatestEpisodes = lazy(() => import('./pages/LatestEpisodes').then(m => ({ default: m.LatestEpisodes })));
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -100,6 +102,8 @@ function App() {
               <Route path="/playlists" element={<Playlists />} />
               <Route path="/history" element={<History />} />
               <Route path="/podcasts/speakers" element={<Speakers />} />
+              <Route path="/podcasts/series" element={<Series />} />
+              <Route path="/podcasts/latest" element={<LatestEpisodes />} />
               <Route path="/podcasts/speaker/:slug" element={<SpeakerDetail />} />
               <Route path="/podcasts/series/:id" element={<SeriesDetail />} />
               <Route path="/podcasts/episode/:id" element={<EpisodeDetail />} />

@@ -95,6 +95,16 @@ export async function getFeaturedSeries(limit: number = 10): Promise<Series[]> {
   return response.documents as unknown as Series[];
 }
 
+export async function getAllSeries(): Promise<Series[]> {
+  if (!isAppwriteConfigured()) return [];
+  const response = await databases.listDocuments(
+    DATABASE_ID,
+    SERIES_COLLECTION,
+    [Query.limit(200)]
+  );
+  return response.documents as unknown as Series[];
+}
+
 export async function getEpisodesBySeries(seriesId: string): Promise<Episode[]> {
   if (!isAppwriteConfigured()) return [];
   const response = await databases.listDocuments(
