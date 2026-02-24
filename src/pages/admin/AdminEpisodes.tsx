@@ -21,8 +21,8 @@ export function AdminEpisodes() {
   async function loadEpisodes() {
     try {
       const response = await adminDatabases.listDocuments(DATABASE_ID, EPISODES_COLLECTION, [
-        Query.orderDesc('publishedAt'),
-        Query.limit(100)
+        Query.limit(500),
+        Query.orderDesc('publishedAt')
       ]);
       setEpisodes(response.documents as unknown as Episode[]);
     } catch (error) {

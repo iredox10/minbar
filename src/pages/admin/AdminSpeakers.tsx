@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit, Trash2, Star, StarOff, AlertCircle } from 'lucide-react';
-import { adminDatabases, deleteSpeaker, SPEAKERS_COLLECTION, DATABASE_ID } from '../../lib/admin';
+import { adminDatabases, deleteSpeaker, SPEAKERS_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import type { Speaker } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -19,7 +19,10 @@ export function AdminSpeakers() {
 
   async function loadSpeakers() {
     try {
-      const response = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION);
+      const response = await adminDatabases.listDocuments(DATABASE_ID, SPEAKERS_COLLECTION, [
+        Query.limit(500),
+        Query.orderDesc('createdAt')
+      ]);
       setSpeakers(response.documents as unknown as Speaker[]);
     } catch (error) {
       console.error('Failed to load speakers:', error);

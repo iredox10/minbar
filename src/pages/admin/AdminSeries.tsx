@@ -19,6 +19,7 @@ export function AdminSeries() {
   async function loadSeries() {
     try {
       const response = await adminDatabases.listDocuments(DATABASE_ID, SERIES_COLLECTION, [
+        Query.limit(500),
         Query.orderDesc('createdAt')
       ]);
       setSeries(response.documents as unknown as Series[]);
