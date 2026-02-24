@@ -38,6 +38,7 @@ const AdminRadio = lazy(() => import('./pages/admin/AdminRadio').then(m => ({ de
 const AdminRadioForm = lazy(() => import('./pages/admin/AdminRadioForm').then(m => ({ default: m.AdminRadioForm })));
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 const AdminArchiveImport = lazy(() => import('./pages/admin/AdminArchiveImport').then(m => ({ default: m.AdminArchiveImport })));
+const AdminYouTubeImport = lazy(() => import('./pages/admin/AdminYouTubeImport').then(m => ({ default: m.AdminYouTubeImport })));
 
 function PageLoader() {
   return (
@@ -83,6 +84,7 @@ function AdminRoutes() {
           <Route path="radio/new" element={<AdminRadioForm />} />
           <Route path="radio/:id" element={<AdminRadioForm />} />
           <Route path="import" element={<AdminArchiveImport />} />
+          <Route path="youtube" element={<AdminYouTubeImport />} />
         </Route>
       </Routes>
     </Suspense>
