@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Loader2, CheckSquare, Square, Upload, ExternalLink, AlertCircle, Music, Clock, HardDrive, Plus, ChevronDown } from 'lucide-react';
+import { Search, Loader2, CheckSquare, Square, Upload, ExternalLink, AlertCircle, Music, Clock, HardDrive, Plus, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { fetchArchiveMetadata, parseArchiveItem, type ParsedArchiveItem } from '../../lib/archive';
-import { createSpeaker, createSeries, createEpisode, adminDatabases, SPEAKERS_COLLECTION, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
+import { createSpeaker, createSeries, createEpisode, uploadImage, adminDatabases, SPEAKERS_COLLECTION, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import { cn, slugify } from '../../lib/utils';
 import { toast } from 'sonner';
 
@@ -18,6 +18,7 @@ interface EditableSeriesInfo {
   speakerName: string;
   description: string;
   category: string;
+  artworkUrl: string;
 }
 
 const CATEGORIES = [
@@ -49,12 +50,14 @@ export function AdminArchiveImport() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [showSpeakerDropdown, setShowSpeakerDropdown] = useState(false);
   const [newSpeakerMode, setNewSpeakerMode] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [seriesInfo, setSeriesInfo] = useState<EditableSeriesInfo>({
     title: '',
     speakerId: '',
     speakerName: '',
     description: '',
-    category: 'Lectures'
+    category: 'Lectures',
+    artworkUrl: ''
   });
   
   useEffect(() => {
@@ -68,7 +71,8 @@ export function AdminArchiveImport() {
         speakerId: '',
         speakerName: parsedItem.creator,
         description: parsedItem.description?.substring(0, 5000) || '',
-        category: 'Lectures'
+        category: 'Lectures',
+        artworkUrl: `https://archive.org/services/img/${parsedItem.identifier}`
       });
       setNewSpeakerMode(true);
     }
@@ -124,7 +128,8 @@ export function AdminArchiveImport() {
         speakerId: '',
         speakerName: parsed.creator,
         description: parsed.description?.substring(0, 5000) || '',
-        category: 'Lectures'
+        category: 'Lectures',
+        artworkUrl: `https://archive.org/services/img/${parsed.identifier}`
       });
       setNewSpeakerMode(true);
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
@@ -178,7 +183,8 @@ export function AdminArchiveImport() {
         speakerId: '',
         speakerName: parsed.creator,
         description: parsed.description?.substring(0, 5000) || '',
-        category: 'Lectures'
+        category: 'Lectures',
+        artworkUrl: `https://archive.org/services/img/${parsed.identifier}`
       });
       setNewSpeakerMode(true);
       setSelectedFiles(new Set(parsed.audioFiles.map((_, i) => i)));
@@ -216,7 +222,7 @@ export function AdminArchiveImport() {
             name: seriesInfo.speakerName,
             slug: speakerSlug,
             bio: '',
-            imageUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
+            imageUrl: seriesInfo.artworkUrl,
             featured: false
           });
           await loadSpeakers();
@@ -239,7 +245,7 @@ export function AdminArchiveImport() {
           slug: seriesSlug,
           speakerId: speakerId,
           description: seriesInfo.description?.substring(0, 5000) || '',
-          artworkUrl: `https://archive.org/services/img/${parsedItem.identifier}`,
+          artworkUrl: seriesInfo.artworkUrl,
           category: seriesInfo.category,
           episodeCount: selectedFiles.size
         });
@@ -392,20 +398,56 @@ export function AdminArchiveImport() {
           {/* Series Info - Editable */}
           <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
             <div className="flex items-start gap-4">
-              {editMode ? (
-                <div className="w-24 h-24 rounded-xl bg-slate-700 flex items-center justify-center">
-                  <Upload size={24} className="text-slate-400" />
-                </div>
-              ) : (
-                <img
-                  src={`https://archive.org/services/img/${parsedItem.identifier}`}
-                  alt={parsedItem.title}
-                  className="w-24 h-24 rounded-xl object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96?text=No+Image';
-                  }}
-                />
-              )}
+              {/* Cover Image */}
+              <div className="flex-shrink-0">
+                {editMode ? (
+                  <div className="relative">
+                    <img
+                      src={seriesInfo.artworkUrl || 'https://via.placeholder.com/96?text=No+Image'}
+                      alt="Cover"
+                      className="w-24 h-24 rounded-xl object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96?text=No+Image';
+                      }}
+                    />
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingImage(true);
+                          try {
+                            const url = await uploadImage(file);
+                            setSeriesInfo({ ...seriesInfo, artworkUrl: url });
+                          } catch (error) {
+                            toast.error('Failed to upload image');
+                          } finally {
+                            setUploadingImage(false);
+                          }
+                        }}
+                        disabled={uploadingImage}
+                      />
+                      {uploadingImage ? (
+                        <Loader2 size={20} className="text-white animate-spin" />
+                      ) : (
+                        <ImageIcon size={20} className="text-white" />
+                      )}
+                    </label>
+                  </div>
+                ) : (
+                  <img
+                    src={seriesInfo.artworkUrl || `https://archive.org/services/img/${parsedItem.identifier}`}
+                    alt={seriesInfo.title}
+                    className="w-24 h-24 rounded-xl object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96?text=No+Image';
+                    }}
+                  />
+                )}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   {editMode ? (
