@@ -107,19 +107,29 @@ export function AdminYouTubeImport() {
   }
 
   async function handleFetchInfo() {
-    if (!url.trim()) return;
+    if (!url.trim()) {
+      toast.error('Please enter a YouTube URL');
+      return;
+    }
 
+    console.log('Fetching YouTube info for:', url.trim());
     setLoading(true);
     setError(null);
     setVideoInfo(null);
 
     try {
       const result = await getYouTubeInfo(url.trim());
+      console.log('YouTube result:', result);
+      
       if (result.error) {
+        console.error('YouTube error:', result.error);
         setError(result.error);
+        toast.error(result.error);
         return;
       }
+      
       if (result.data) {
+        console.log('Setting video info:', result.data);
         setVideoInfo(result.data);
         setInfo({
           title: result.data.title,
@@ -132,11 +142,18 @@ export function AdminYouTubeImport() {
         });
         setNewSpeakerMode(true);
         setNewSeriesMode(true);
+        toast.success('Video info fetched successfully');
+      } else {
+        console.error('No data in result');
+        setError('No video data received');
+        toast.error('No video data received');
       }
     } catch (err: any) {
       console.error('Fetch error:', err);
       setError(err.message || 'Failed to fetch video info');
+      toast.error(err.message || 'Failed to fetch video info');
     } finally {
+      console.log('Fetch complete, loading set to false');
       setLoading(false);
     }
   }
@@ -230,6 +247,7 @@ export function AdminYouTubeImport() {
   }
 
   function formatDuration(seconds: number): string {
+    if (!seconds || seconds === 0) return 'Unknown';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -287,6 +305,13 @@ export function AdminYouTubeImport() {
         <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-center gap-3">
           <AlertCircle className="text-rose-400" size={20} />
           <p className="text-rose-400">{error}</p>
+        </div>
+      )}
+
+      {loading && (
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 flex items-center gap-3">
+          <Loader2 className="text-primary animate-spin" size={20} />
+          <p className="text-primary">Fetching video information...</p>
         </div>
       )}
 

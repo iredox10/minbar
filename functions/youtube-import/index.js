@@ -15,18 +15,47 @@ export default async function ({ req, res, log, error }) {
   try {
     let body = {};
     
-    if (req.body && typeof req.body === 'string') {
-      body = JSON.parse(req.body);
-      log(`Parsed body from string`);
-    } else if (req.bodyJson) {
-      body = req.bodyJson;
-      log(`Got body from bodyJson`);
-    } else if (req.body && typeof req.body === 'object') {
-      body = req.body;
-      log(`Got body as object`);
+    // Log everything for debugging
+    log(`=== Request Debug ===`);
+    log(`req.path: ${req.path}`);
+    log(`req.body: "${req.body}"`);
+    
+    // Parse data from path: /url/ACTION/VIDEO_URL
+    // Example: /download/https://youtube.com/watch?v=xxx
+    const pathParts = req.path.split('/').filter(p => p);
+    log(`Path parts: ${JSON.stringify(pathParts)}`);
+    
+    if (pathParts.length >= 2) {
+      const action = pathParts[0];
+      const url = decodeURIComponent(pathParts.slice(1).join('/'));
+      body = { url, action };
+      log(`Parsed from path - url: ${url}, action: ${action}`);
+    }
+    
+    // Try bodyJson as fallback
+    if (!body.url) {
+      try {
+        if (req.bodyJson) {
+          body = req.bodyJson;
+          log(`Got body from bodyJson: ${JSON.stringify(body)}`);
+        }
+      } catch (e) {
+        log(`bodyJson error: ${e.message}`);
+      }
+    }
+    
+    // Try parsing req.body as string
+    if (!body.url && req.body && typeof req.body === 'string' && req.body.length > 0) {
+      try {
+        body = JSON.parse(req.body);
+        log(`Parsed body from string: ${JSON.stringify(body)}`);
+      } catch (e) {
+        log(`Failed to parse body: ${e.message}`);
+      }
     }
     
     const { url, action } = body;
+    log(`Final - url: ${url}, action: ${action}`);
 
     if (!url) {
       return res.json({ error: 'URL is required' }, 400);
