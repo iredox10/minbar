@@ -144,7 +144,7 @@ export function MiniPlayer() {
 
   const isLoading = playerState === 'loading';
   const isPlaying = playerState === 'playing';
-  const hasTrack = currentTrack && playerState !== 'idle';
+  const hasTrack = !!currentTrack;
 
   const progress = duration > 0 ? (position / duration) * 100 : 0;
 

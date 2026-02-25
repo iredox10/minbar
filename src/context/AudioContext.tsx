@@ -179,23 +179,38 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const togglePlayPause = useCallback(() => {
     if (playerState === 'playing') {
       pause();
-    } else {
+    } else if (playerState === 'paused') {
       audioManager.togglePlayPause();
+    } else if (currentTrack) {
+      // Track loaded in state but not in audioManager (e.g., after page reload)
+      play(currentTrack, position);
     }
-  }, [playerState, pause]);
+  }, [playerState, pause, currentTrack, position, play]);
 
   const seek = useCallback((pos: number) => {
-    audioManager.seek(pos);
-    setPosition(pos);
-    // Save to cloud on seek
-    if (currentTrackRef.current) {
-      savePlaybackState(currentTrackRef.current, pos, playbackSpeedRef.current);
+    if (playerState === 'idle' && currentTrack) {
+      // Track loaded in state but not playing - just update position
+      setPosition(pos);
+      savePlaybackState(currentTrack, pos, playbackSpeedRef.current);
+    } else {
+      audioManager.seek(pos);
+      setPosition(pos);
+      if (currentTrackRef.current) {
+        savePlaybackState(currentTrackRef.current, pos, playbackSpeedRef.current);
+      }
     }
-  }, []);
+  }, [playerState, currentTrack]);
 
   const seekRelative = useCallback((seconds: number) => {
-    audioManager.seekRelative(seconds);
-  }, []);
+    if (playerState === 'idle' && currentTrack) {
+      // Track loaded in state but not playing - adjust position directly
+      const newPos = Math.max(0, Math.min(position + seconds, duration || currentTrack.duration));
+      setPosition(newPos);
+      savePlaybackState(currentTrack, newPos, playbackSpeedRef.current);
+    } else {
+      audioManager.seekRelative(seconds);
+    }
+  }, [playerState, currentTrack, position, duration]);
 
   const setPlaybackSpeed = useCallback((speed: number) => {
     audioManager.setPlaybackSpeed(speed);
