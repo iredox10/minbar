@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Radio, BookOpen, Download, Settings, Search } from 'lucide-react';
+import { Home, PlayCircle, BookOpen, Download, Settings, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/search', icon: Search, label: 'Search' },
-  { path: '/radio', icon: Radio, label: 'Radio' },
+  { path: '/player', icon: PlayCircle, label: 'Player' },
   { path: '/duas', icon: BookOpen, label: 'Duas' },
   { path: '/downloads', icon: Download, label: 'Downloads' },
   { path: '/settings', icon: Settings, label: 'Settings' }

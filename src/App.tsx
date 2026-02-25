@@ -17,6 +17,7 @@ const Favorites = lazy(() => import('./pages/Favorites').then(m => ({ default: m
 const Playlists = lazy(() => import('./pages/Playlists').then(m => ({ default: m.Playlists })));
 const History = lazy(() => import('./pages/History').then(m => ({ default: m.History })));
 const Radio = lazy(() => import('./pages/Radio').then(m => ({ default: m.Radio })));
+const PlayerPage = lazy(() => import('./pages/PlayerPage').then(m => ({ default: m.PlayerPage })));
 const Duas = lazy(() => import('./pages/Duas').then(m => ({ default: m.Duas })));
 const Downloads = lazy(() => import('./pages/Downloads').then(m => ({ default: m.Downloads })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
@@ -110,6 +111,7 @@ function App() {
               <Route path="/podcasts/series/:id" element={<SeriesDetail />} />
               <Route path="/podcasts/episode/:id" element={<EpisodeDetail />} />
               <Route path="/radio" element={<Radio />} />
+              <Route path="/player" element={<PlayerPage />} />
               <Route path="/duas" element={<Duas />} />
               <Route path="/duas/:id" element={<Duas />} />
               <Route path="/downloads" element={<Downloads />} />

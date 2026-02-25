@@ -21,6 +21,7 @@ export const SERIES_COLLECTION = 'series';
 export const EPISODES_COLLECTION = 'episodes';
 export const DUAS_COLLECTION = 'duas';
 export const RADIO_COLLECTION = 'radio_stations';
+export const USER_PLAYBACK_COLLECTION = 'user_playback';
 
 export function isAppwriteConfigured(): boolean {
   return !!APPWRITE_PROJECT_ID;
@@ -201,4 +202,153 @@ export async function getAudioUrl(fileId: string): Promise<string> {
 export function getImageUrl(fileId: string, bucketId: string = IMAGES_BUCKET): string {
   if (!isAppwriteConfigured()) return '';
   return storage.getFileView(bucketId, fileId);
+}
+
+interface SavedPlaybackState {
+  $id: string;
+  deviceId: string;
+  trackId: string;
+  trackType: 'episode' | 'radio' | 'dua';
+  trackTitle: string;
+  trackAudioUrl: string;
+  trackArtworkUrl?: string;
+  trackSpeaker?: string;
+  trackDuration: number;
+  position: number;
+  playbackSpeed: number;
+  updatedAt: string;
+}
+
+function getDeviceId(): string {
+  let deviceId = localStorage.getItem('mc_device_id');
+  if (!deviceId) {
+    deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('mc_device_id', deviceId);
+  }
+  return deviceId;
+}
+
+export async function savePlaybackState(track: {
+  id: string;
+  title: string;
+  audioUrl: string;
+  artworkUrl?: string;
+  speaker?: string;
+  duration: number;
+  type: 'episode' | 'radio' | 'dua';
+}, position: number, playbackSpeed: number): Promise<void> {
+  if (!isAppwriteConfigured()) return;
+  
+  const deviceId = getDeviceId();
+  
+  try {
+    const existing = await databases.listDocuments(
+      DATABASE_ID,
+      USER_PLAYBACK_COLLECTION,
+      [Query.equal('deviceId', deviceId), Query.limit(1)]
+    );
+    
+    const data = {
+      deviceId,
+      trackId: track.id,
+      trackType: track.type,
+      trackTitle: track.title,
+      trackAudioUrl: track.audioUrl,
+      trackArtworkUrl: track.artworkUrl || '',
+      trackSpeaker: track.speaker || '',
+      trackDuration: Math.floor(track.duration),
+      position: Math.floor(position),
+      playbackSpeed,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    if (existing.documents.length > 0) {
+      await databases.updateDocument(
+        DATABASE_ID,
+        USER_PLAYBACK_COLLECTION,
+        existing.documents[0].$id,
+        data
+      );
+    } else {
+      await databases.createDocument(
+        DATABASE_ID,
+        USER_PLAYBACK_COLLECTION,
+        'unique()',
+        data
+      );
+    }
+  } catch (error) {
+    console.error('Failed to save playback state:', error);
+  }
+}
+
+export async function loadPlaybackState(): Promise<{
+  track: {
+    id: string;
+    title: string;
+    audioUrl: string;
+    artworkUrl?: string;
+    speaker?: string;
+    duration: number;
+    type: 'episode' | 'radio' | 'dua';
+  } | null;
+  position: number;
+  playbackSpeed: number;
+} | null> {
+  if (!isAppwriteConfigured()) return null;
+  
+  const deviceId = getDeviceId();
+  
+  try {
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      USER_PLAYBACK_COLLECTION,
+      [Query.equal('deviceId', deviceId), Query.limit(1)]
+    );
+    
+    if (response.documents.length === 0) return null;
+    
+    const doc = response.documents[0] as unknown as SavedPlaybackState;
+    
+    return {
+      track: {
+        id: doc.trackId,
+        title: doc.trackTitle,
+        audioUrl: doc.trackAudioUrl,
+        artworkUrl: doc.trackArtworkUrl || undefined,
+        speaker: doc.trackSpeaker || undefined,
+        duration: doc.trackDuration,
+        type: doc.trackType as 'episode' | 'radio' | 'dua',
+      },
+      position: doc.position,
+      playbackSpeed: doc.playbackSpeed,
+    };
+  } catch (error) {
+    console.error('Failed to load playback state:', error);
+    return null;
+  }
+}
+
+export async function clearPlaybackState(): Promise<void> {
+  if (!isAppwriteConfigured()) return;
+  
+  const deviceId = getDeviceId();
+  
+  try {
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      USER_PLAYBACK_COLLECTION,
+      [Query.equal('deviceId', deviceId), Query.limit(1)]
+    );
+    
+    if (response.documents.length > 0) {
+      await databases.deleteDocument(
+        DATABASE_ID,
+        USER_PLAYBACK_COLLECTION,
+        response.documents[0].$id
+      );
+    }
+  } catch (error) {
+    console.error('Failed to clear playback state:', error);
+  }
 }

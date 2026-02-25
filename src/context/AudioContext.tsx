@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { audioManager } from '../lib/audio';
 import { updatePlaybackProgress } from '../lib/db';
 import { trackPlayStart } from '../lib/analytics';
+import { savePlaybackState, loadPlaybackState, clearPlaybackState } from '../lib/appwrite';
 import type { CurrentTrack, PlayerState } from '../types';
 
 interface AudioContextType {
@@ -28,6 +29,8 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
+const CLOUD_SYNC_INTERVAL = 10000;
+
 export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<CurrentTrack | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState>('idle');
@@ -37,7 +40,62 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
+  const currentTrackRef = useRef<CurrentTrack | null>(null);
+  const positionRef = useRef(0);
+  const playbackSpeedRef = useRef(1);
+
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
+
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+
+  // Load saved playback state on mount
+  useEffect(() => {
+    async function loadSavedState() {
+      try {
+        const saved = await loadPlaybackState();
+        if (saved && saved.track) {
+          setCurrentTrack(saved.track);
+          setPosition(saved.position);
+          setPlaybackSpeedState(saved.playbackSpeed);
+          audioManager.setPlaybackSpeed(saved.playbackSpeed);
+          setPlayerState('idle');
+        }
+      } catch (error) {
+        console.error('Failed to load saved playback state:', error);
+      }
+      setInitialized(true);
+    }
+    loadSavedState();
+  }, []);
+
+  // Periodic cloud sync
+  useEffect(() => {
+    if (!initialized) return;
+
+    const syncInterval = setInterval(() => {
+      if (currentTrackRef.current && playerState !== 'idle') {
+        savePlaybackState(
+          currentTrackRef.current,
+          positionRef.current,
+          playbackSpeedRef.current
+        );
+      }
+    }, CLOUD_SYNC_INTERVAL);
+
+    return () => clearInterval(syncInterval);
+  }, [initialized, playerState]);
+
+  // Sleep timer check
   useEffect(() => {
     const sleepTimerCheck = setInterval(() => {
       setSleepTimerRemaining(audioManager.getSleepTimerRemaining());
@@ -46,12 +104,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(sleepTimerCheck);
   }, []);
 
+  // Audio manager event handlers
   useEffect(() => {
     audioManager.on({
       onStateChange: (state) => {
         setPlayerState(state);
-        if (state === 'idle' && currentTrack) {
-          updatePlaybackProgress(currentTrack.id, duration, duration, true);
+        if (state === 'idle' && currentTrackRef.current) {
+          updatePlaybackProgress(currentTrackRef.current.id, duration, duration, true);
         }
       },
       onProgress: (pos, dur) => {
@@ -62,12 +121,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setDuration(dur);
       },
       onEnd: () => {
-        if (currentTrack) {
-          updatePlaybackProgress(currentTrack.id, duration, duration, true);
+        if (currentTrackRef.current) {
+          updatePlaybackProgress(currentTrackRef.current.id, duration, duration, true);
+          clearPlaybackState();
         }
       }
     });
-  }, [currentTrack, duration]);
+  }, [duration]);
+
+  // Save to cloud on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentTrackRef.current && playerState !== 'idle') {
+        savePlaybackState(
+          currentTrackRef.current,
+          positionRef.current,
+          playbackSpeedRef.current
+        );
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [playerState]);
 
   const play = useCallback(async (track: CurrentTrack, startPosition: number = 0) => {
     try {
@@ -81,6 +157,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (track.type === 'episode' || track.type === 'radio') {
         trackPlayStart(track.id, track.type, track.title);
       }
+
+      // Save to cloud immediately when starting playback
+      savePlaybackState(track, startPosition, playbackSpeedRef.current);
     } catch (error) {
       console.error('Failed to play track:', error);
       setPlayerState('idle');
@@ -90,7 +169,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const pause = useCallback(() => {
     audioManager.pause();
     if (currentTrack) {
-      updatePlaybackProgress(currentTrack.id, audioManager.getPosition(), duration);
+      const pos = audioManager.getPosition();
+      updatePlaybackProgress(currentTrack.id, pos, duration);
+      // Save to cloud on pause
+      savePlaybackState(currentTrack, pos, playbackSpeedRef.current);
     }
   }, [currentTrack, duration]);
 
@@ -105,6 +187,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const seek = useCallback((pos: number) => {
     audioManager.seek(pos);
     setPosition(pos);
+    // Save to cloud on seek
+    if (currentTrackRef.current) {
+      savePlaybackState(currentTrackRef.current, pos, playbackSpeedRef.current);
+    }
   }, []);
 
   const seekRelative = useCallback((seconds: number) => {
@@ -114,6 +200,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const setPlaybackSpeed = useCallback((speed: number) => {
     audioManager.setPlaybackSpeed(speed);
     setPlaybackSpeedState(speed);
+    // Save to cloud on speed change
+    if (currentTrackRef.current) {
+      savePlaybackState(currentTrackRef.current, positionRef.current, speed);
+    }
   }, []);
 
   const setVolume = useCallback((vol: number) => {
@@ -145,6 +235,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setPlayerState('idle');
     setPosition(0);
     setDuration(0);
+    // Clear cloud state on stop
+    clearPlaybackState();
   }, [currentTrack, duration]);
 
   return (
