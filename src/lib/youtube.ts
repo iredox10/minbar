@@ -89,10 +89,13 @@ export async function getYouTubeInfo(url: string): Promise<YouTubeInfoResult> {
 
 export async function importFromYouTube(url: string, title?: string): Promise<YouTubeImportResult> {
   try {
-    // Pass data via path since Appwrite SDK doesn't pass body correctly
+    // Pass URL and title as separate path segments: /download/URL/TITLE
     const action = 'download';
-    const dataUrl = title ? `${url}?title=${encodeURIComponent(title)}` : url;
-    const path = `/${action}/${encodeURIComponent(dataUrl)}`;
+    const encodedUrl = encodeURIComponent(url);
+    const encodedTitle = title ? encodeURIComponent(title) : '';
+    const path = encodedTitle 
+      ? `/${action}/${encodedUrl}/${encodedTitle}`
+      : `/${action}/${encodedUrl}`;
     
     console.log('Calling function with path:', path);
     

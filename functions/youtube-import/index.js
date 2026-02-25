@@ -1,5 +1,6 @@
 import { Client, Storage, ID, Permission, Role } from 'node-appwrite';
-import ytdl from 'ytdl-core';
+
+const COBALT_API = 'https://api.cobalt.tools';
 
 export default async function ({ req, res, log, error }) {
   const client = new Client()
@@ -14,25 +15,27 @@ export default async function ({ req, res, log, error }) {
 
   try {
     let body = {};
+    let titleOverride = null;
     
-    // Log everything for debugging
     log(`=== Request Debug ===`);
     log(`req.path: ${req.path}`);
-    log(`req.body: "${req.body}"`);
     
-    // Parse data from path: /url/ACTION/VIDEO_URL
-    // Example: /download/https://youtube.com/watch?v=xxx
     const pathParts = req.path.split('/').filter(p => p);
     log(`Path parts: ${JSON.stringify(pathParts)}`);
     
     if (pathParts.length >= 2) {
       const action = pathParts[0];
-      const url = decodeURIComponent(pathParts.slice(1).join('/'));
+      const url = decodeURIComponent(pathParts[1]);
       body = { url, action };
+      
+      if (pathParts.length >= 3) {
+        titleOverride = decodeURIComponent(pathParts[2]);
+        log(`Title override: ${titleOverride}`);
+      }
+      
       log(`Parsed from path - url: ${url}, action: ${action}`);
     }
     
-    // Try bodyJson as fallback
     if (!body.url) {
       try {
         if (req.bodyJson) {
@@ -44,16 +47,6 @@ export default async function ({ req, res, log, error }) {
       }
     }
     
-    // Try parsing req.body as string
-    if (!body.url && req.body && typeof req.body === 'string' && req.body.length > 0) {
-      try {
-        body = JSON.parse(req.body);
-        log(`Parsed body from string: ${JSON.stringify(body)}`);
-      } catch (e) {
-        log(`Failed to parse body: ${e.message}`);
-      }
-    }
-    
     const { url, action } = body;
     log(`Final - url: ${url}, action: ${action}`);
 
@@ -61,90 +54,124 @@ export default async function ({ req, res, log, error }) {
       return res.json({ error: 'URL is required' }, 400);
     }
 
-    if (!ytdl.validateURL(url)) {
-      return res.json({ error: 'Invalid YouTube URL' }, 400);
+    if (!action) {
+      return res.json({ error: 'Action is required (info or download)' }, 400);
     }
 
-    const videoId = ytdl.getURLVideoID(url);
+    // Extract video ID from URL
+    const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+    
+    if (!videoId) {
+      return res.json({ error: 'Invalid YouTube URL' }, 400);
+    }
+    
+    log(`Video ID: ${videoId}`);
 
     if (action === 'info') {
-      log(`Fetching info for: ${videoId}`);
+      // Fetch video info from YouTube oEmbed
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
       
-      const info = await ytdl.getInfo(url);
-      const videoDetails = info.videoDetails;
+      const oembedResponse = await fetch(oembedUrl);
+      if (!oembedResponse.ok) {
+        return res.json({ error: 'Failed to fetch video info from YouTube' }, 500);
+      }
       
-      const formats = ytdl.filterFormats(info.formats, 'audioonly');
-      const audioFormat = formats.find(f => f.audioBitrate && f.audioBitrate >= 128) || formats[0];
+      const oembedData = await oembedResponse.json();
       
       return res.json({
         success: true,
         data: {
           id: videoId,
-          title: videoDetails.title,
-          description: videoDetails.description?.substring(0, 5000) || '',
-          duration: parseInt(videoDetails.lengthSeconds, 10),
-          thumbnail: videoDetails.thumbnails?.[videoDetails.thumbnails.length - 1]?.url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-          author: videoDetails.author?.name || 'Unknown',
-          viewCount: parseInt(videoDetails.viewCount, 10) || 0,
-          audioFormats: formats.slice(0, 5).map(f => ({
-            itag: f.itag,
-            bitrate: f.audioBitrate,
-            container: f.container,
-            size: f.contentLength ? parseInt(f.contentLength, 10) : null
-          }))
+          title: oembedData.title || 'Unknown Title',
+          description: '',
+          duration: 0,
+          thumbnail: oembedData.thumbnail_url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          author: oembedData.author_name || 'Unknown',
+          viewCount: 0
         }
       });
     }
 
     if (action === 'download') {
-      log(`Downloading audio from: ${videoId}`);
+      log(`Downloading audio using Cobalt API for: ${videoId}`);
       
-      const info = await ytdl.getInfo(url);
-      const videoDetails = info.videoDetails;
-      const title = body.title || videoDetails.title;
-      
-      const formats = ytdl.filterFormats(info.formats, 'audioonly');
-      const audioFormat = formats.find(f => f.audioBitrate && f.audioBitrate >= 128) || formats[0];
-      
-      if (!audioFormat) {
-        return res.json({ error: 'No suitable audio format found' }, 400);
-      }
-      
-      const estimatedSize = audioFormat.contentLength ? parseInt(audioFormat.contentLength, 10) : 0;
-      if (estimatedSize > MAX_FILE_SIZE) {
-        return res.json({ error: `File too large: ${(estimatedSize / 1024 / 1024).toFixed(1)}MB exceeds 100MB limit` }, 400);
-      }
-      
-      log(`Selected format: itag=${audioFormat.itag}, bitrate=${audioFormat.audioBitrate}`);
-      
-      const chunks = [];
-      let totalSize = 0;
-      
-      const stream = ytdl(url, {
-        quality: 'highestaudio',
-        filter: 'audioonly'
+      // Use Cobalt API to get the download link
+      const cobaltResponse = await fetch(`${COBALT_API}/api/json`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: url,
+          audioBitrate: '128',
+          audioFormat: 'mp3',
+          downloadMode: 'audio',
+          quality: '720'
+        })
       });
       
-      await new Promise((resolve, reject) => {
-        stream.on('data', (chunk) => {
-          chunks.push(chunk);
-          totalSize += chunk.length;
-          
-          if (totalSize > MAX_FILE_SIZE) {
-            stream.destroy();
-            reject(new Error(`Download exceeded ${MAX_FILE_SIZE / 1024 / 1024}MB limit`));
-          }
-        });
-        
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
+      if (!cobaltResponse.ok) {
+        const cobaltError = await cobaltResponse.text();
+        error(`Cobalt API error: ${cobaltError}`);
+        return res.json({ 
+          error: 'Failed to get download link from Cobalt API',
+          details: cobaltError
+        }, 500);
+      }
       
-      log(`Downloaded ${chunks.length} chunks, total size: ${totalSize} bytes`);
+      const cobaltData = await cobaltResponse.json();
+      log(`Cobalt response: ${JSON.stringify(cobaltData)}`);
       
-      const buffer = Buffer.concat(chunks);
-      const fileExtension = audioFormat.container || 'mp4';
-      const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 100)}.${fileExtension}`;
+      if (cobaltData.status === 'error') {
+        return res.json({ 
+          error: cobaltData.error?.code || 'Cobalt API error',
+          details: cobaltData.error?.context || 'Unknown error'
+        }, 500);
+      }
+      
+      if (cobaltData.status !== 'redirect' && cobaltData.status !== 'stream') {
+        return res.json({ 
+          error: 'Unexpected response from Cobalt API',
+          status: cobaltData.status
+        }, 500);
+      }
+      
+      const downloadUrl = cobaltData.url;
+      if (!downloadUrl) {
+        return res.json({ error: 'No download URL returned from Cobalt' }, 500);
+      }
+      
+      log(`Download URL obtained, fetching audio...`);
+      
+      // Download the audio file
+      const audioResponse = await fetch(downloadUrl);
+      if (!audioResponse.ok) {
+        return res.json({ 
+          error: 'Failed to download audio file',
+          status: audioResponse.status
+        }, 500);
+      }
+      
+      // Check content length
+      const contentLength = parseInt(audioResponse.headers.get('content-length') || '0', 10);
+      if (contentLength > MAX_FILE_SIZE) {
+        return res.json({ 
+          error: `File too large: ${(contentLength / 1024 / 1024).toFixed(1)}MB exceeds 100MB limit` 
+        }, 400);
+      }
+      
+      // Convert to buffer
+      const arrayBuffer = await audioResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      log(`Downloaded ${buffer.length} bytes`);
+      
+      // Generate filename
+      const title = titleOverride || cobaltData.filename?.replace(/\.[^.]+$/, '') || `youtube_${videoId}`;
+      const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 100);
+      const fileName = `${safeTitle}.mp3`;
       
       log(`Uploading file: ${fileName}`);
       
@@ -153,13 +180,11 @@ export default async function ({ req, res, log, error }) {
         ID.unique(),
         {
           name: fileName,
-          type: audioFormat.mimeType || 'audio/mp4',
+          type: 'audio/mpeg',
           size: buffer.length,
           data: buffer.toString('base64')
         },
-        [
-          Permission.read(Role.any())
-        ]
+        [Permission.read(Role.any())]
       );
       
       const fileUrl = `${process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1'}/storage/buckets/${AUDIO_BUCKET}/files/${result.$id}/view?project=${process.env.APPWRITE_PROJECT_ID || process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
@@ -171,9 +196,8 @@ export default async function ({ req, res, log, error }) {
           fileName: fileName,
           fileSize: buffer.length,
           url: fileUrl,
-          duration: parseInt(videoDetails.lengthSeconds, 10),
-          title: videoDetails.title,
-          thumbnail: videoDetails.thumbnails?.[videoDetails.thumbnails.length - 1]?.url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+          title: title,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
         }
       });
     }
@@ -184,7 +208,7 @@ export default async function ({ req, res, log, error }) {
     error(`Stack: ${err.stack}`);
     return res.json({ 
       error: 'Failed to process YouTube video', 
-      message: err.message 
+      message: err.message
     }, 500);
   }
 }
