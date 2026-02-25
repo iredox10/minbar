@@ -214,6 +214,8 @@ interface SavedPlaybackState {
   trackArtworkUrl?: string;
   trackSpeaker?: string;
   trackDuration: number;
+  trackSeriesId?: string;
+  trackEpisodeNumber?: number;
   position: number;
   playbackSpeed: number;
   updatedAt: string;
@@ -236,6 +238,8 @@ export async function savePlaybackState(track: {
   speaker?: string;
   duration: number;
   type: 'episode' | 'radio' | 'dua';
+  seriesId?: string;
+  episodeNumber?: number;
 }, position: number, playbackSpeed: number): Promise<void> {
   if (!isAppwriteConfigured()) return;
   
@@ -257,6 +261,8 @@ export async function savePlaybackState(track: {
       trackArtworkUrl: track.artworkUrl || '',
       trackSpeaker: track.speaker || '',
       trackDuration: Math.floor(track.duration),
+      trackSeriesId: track.seriesId || '',
+      trackEpisodeNumber: track.episodeNumber || 0,
       position: Math.floor(position),
       playbackSpeed,
       updatedAt: new Date().toISOString(),
@@ -291,6 +297,8 @@ export async function loadPlaybackState(): Promise<{
     speaker?: string;
     duration: number;
     type: 'episode' | 'radio' | 'dua';
+    seriesId?: string;
+    episodeNumber?: number;
   } | null;
   position: number;
   playbackSpeed: number;
@@ -319,6 +327,8 @@ export async function loadPlaybackState(): Promise<{
         speaker: doc.trackSpeaker || undefined,
         duration: doc.trackDuration,
         type: doc.trackType as 'episode' | 'radio' | 'dua',
+        seriesId: doc.trackSeriesId || undefined,
+        episodeNumber: doc.trackEpisodeNumber || undefined,
       },
       position: doc.position,
       playbackSpeed: doc.playbackSpeed,

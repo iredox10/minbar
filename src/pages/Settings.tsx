@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders } from 'lucide-react';
 import { getSettings, updateSettings } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
+import { InstallButton } from '../components/InstallButton';
 import type { AppSettings } from '../types';
 import { cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
 
@@ -87,6 +88,11 @@ export function Settings() {
         animate="show"
         className="space-y-6"
       >
+        {/* Install PWA */}
+        <motion.section variants={item}>
+          <InstallButton />
+        </motion.section>
+
         {/* Appearance */}
         <motion.section variants={item} className="space-y-3">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Appearance</h2>

@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, X, Music2, Timer, Gauge,
-  ChevronDown, RotateCcw, RotateCw, Volume2, VolumeX, Moon
+  ChevronDown, RotateCcw, RotateCw, Volume2, VolumeX, Moon,
+  Repeat, Repeat1, Heart, ListPlus, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
-import { useState, useRef, useCallback } from 'react';
+import { getPlaylists, addToPlaylist } from '../lib/db';
+import type { Playlist } from '../types';
 
 function formatSleepTimer(ms: number | null): string {
   if (!ms || ms <= 0) return '';
@@ -88,77 +90,61 @@ function ProgressBar({
   duration: number;
   onSeek: (pos: number) => void;
 }) {
-  const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState(0);
 
   const progress = duration > 0 ? (position / duration) * 100 : 0;
   const displayProgress = dragging ? dragProgress : progress;
 
-  const getPositionFromEvent = useCallback((clientX: number) => {
-    if (!barRef.current) return 0;
-    const rect = barRef.current.getBoundingClientRect();
+  const handleInteraction = (clientX: number, rect: DOMRect) => {
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     return x / rect.width;
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setDragging(true);
-    const pct = getPositionFromEvent(e.clientX);
-    setDragProgress(pct * 100);
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
-    const pct = getPositionFromEvent(e.clientX);
-    setDragProgress(pct * 100);
-  }, [dragging, getPositionFromEvent]);
-
-  const handleMouseUp = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
-    const pct = getPositionFromEvent(e.clientX);
-    onSeek(pct * duration);
-    setDragging(false);
-  }, [dragging, duration, getPositionFromEvent, onSeek]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
     setDragging(true);
-    const pct = getPositionFromEvent(e.touches[0].clientX);
-    setDragProgress(pct * 100);
-  };
-
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!dragging) return;
-    const pct = getPositionFromEvent(e.touches[0].clientX);
-    setDragProgress(pct * 100);
-  }, [dragging, getPositionFromEvent]);
-
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (!dragging) return;
-    const pct = getPositionFromEvent(e.changedTouches[0].clientX);
-    onSeek(pct * duration);
-    setDragging(false);
-  }, [dragging, duration, getPositionFromEvent, onSeek]);
-
-  useEffect(() => {
-    if (dragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleTouchMove);
-      window.addEventListener('touchend', handleTouchEnd);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+    setDragProgress(handleInteraction(e.clientX, rect) * 100);
+    
+    const handleMove = (ev: MouseEvent) => {
+      setDragProgress(handleInteraction(ev.clientX, rect) * 100);
     };
-  }, [dragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+    const handleUp = (ev: MouseEvent) => {
+      const pct = handleInteraction(ev.clientX, rect);
+      onSeek(pct * duration);
+      setDragging(false);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    setDragging(true);
+    setDragProgress(handleInteraction(e.touches[0].clientX, rect) * 100);
+    
+    const handleMove = (ev: TouchEvent) => {
+      setDragProgress(handleInteraction(ev.touches[0].clientX, rect) * 100);
+    };
+    const handleEnd = (ev: TouchEvent) => {
+      const pct = handleInteraction(ev.changedTouches[0].clientX, rect);
+      onSeek(pct * duration);
+      setDragging(false);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+    };
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleEnd);
+  };
 
   return (
     <div className="w-full select-none">
       <div
-        ref={barRef}
+        ref={() => {}}
         className="relative h-10 flex items-center cursor-pointer group"
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
@@ -290,6 +276,55 @@ function SleepSheet({
   );
 }
 
+function PlaylistSheet({
+  playlists,
+  onSelect,
+  onClose,
+}: {
+  playlists: Playlist[];
+  onSelect: (playlistId: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 rounded-t-3xl p-6 z-10 max-h-80 overflow-y-auto"
+    >
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+          <ListPlus size={18} className="text-primary" />
+          Add to Playlist
+        </h3>
+        <button onClick={onClose} className="p-2 rounded-xl bg-slate-700 text-slate-400 hover:text-white">
+          <X size={16} />
+        </button>
+      </div>
+      {playlists.length === 0 ? (
+        <p className="text-slate-400 text-center py-4">No playlists yet. Create one in the Playlists tab.</p>
+      ) : (
+        <div className="space-y-2">
+          {playlists.map((playlist) => (
+            <motion.button
+              key={playlist.id}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => onSelect(playlist.id!)}
+              className="w-full p-3 rounded-xl bg-slate-700 text-slate-200 text-left hover:bg-slate-600 transition-all"
+            >
+              {playlist.name}
+              {playlist.description && (
+                <p className="text-xs text-slate-400 mt-1">{playlist.description}</p>
+              )}
+            </motion.button>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export function PlayerPage() {
   const navigate = useNavigate();
   const {
@@ -301,6 +336,10 @@ export function PlayerPage() {
     volume,
     isMuted,
     sleepTimerRemaining,
+    repeatMode,
+    hasNext,
+    hasPrevious,
+    isFavoriteTrack,
     togglePlayPause,
     seek,
     seekRelative,
@@ -310,9 +349,15 @@ export function PlayerPage() {
     setSleepTimer,
     clearSleepTimer,
     stop,
+    toggleRepeat,
+    playNext,
+    playPrevious,
+    toggleFavorite,
+    play,
   } = useAudio();
 
-  const [sheet, setSheet] = useState<'speed' | 'sleep' | null>(null);
+  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | null>(null);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const isPlaying = playerState === 'playing';
   const isLoading = playerState === 'loading';
 
@@ -321,6 +366,27 @@ export function PlayerPage() {
       navigate('/', { replace: true });
     }
   }, [currentTrack, navigate]);
+
+  useEffect(() => {
+    if (sheet === 'playlist') {
+      getPlaylists().then(setPlaylists);
+    }
+  }, [sheet]);
+
+  const handleAddToPlaylist = async (playlistId: number) => {
+    if (currentTrack) {
+      await addToPlaylist(playlistId, currentTrack.id);
+      setSheet(null);
+    }
+  };
+
+  const handlePlayResume = () => {
+    if (playerState === 'paused' || playerState === 'playing') {
+      togglePlayPause();
+    } else if (currentTrack) {
+      play(currentTrack, position);
+    }
+  };
 
   if (!currentTrack) {
     return (
@@ -338,6 +404,8 @@ export function PlayerPage() {
       </div>
     );
   }
+
+  const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
 
   return (
     <motion.div
@@ -442,7 +510,23 @@ export function PlayerPage() {
         </div>
 
         {/* Main controls */}
-        <div className="flex items-center justify-between mb-6 px-2">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          {/* Previous */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={playPrevious}
+            disabled={!hasPrevious}
+            className={cn(
+              "p-3 rounded-full transition-colors",
+              hasPrevious ? "text-slate-400 hover:text-white" : "text-slate-700"
+            )}
+            aria-label="Previous"
+          >
+            <ChevronLeft size={28} />
+          </motion.button>
+
+          {/* -15s */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -450,15 +534,16 @@ export function PlayerPage() {
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
           >
             <div className="relative">
-              <RotateCcw size={28} />
-              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold pt-0.5">15</span>
+              <RotateCcw size={24} />
+              <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold pt-0.5">15</span>
             </div>
           </motion.button>
 
+          {/* Play/Pause */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={togglePlayPause}
+            onClick={handlePlayResume}
             disabled={isLoading}
             className={cn(
               'w-20 h-20 rounded-full flex items-center justify-center transition-all relative',
@@ -476,6 +561,7 @@ export function PlayerPage() {
             )}
           </motion.button>
 
+          {/* +30s */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -483,51 +569,108 @@ export function PlayerPage() {
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors"
           >
             <div className="relative">
-              <RotateCw size={28} />
-              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold pt-0.5">30</span>
+              <RotateCw size={24} />
+              <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold pt-0.5">30</span>
             </div>
+          </motion.button>
+
+          {/* Next */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={playNext}
+            disabled={!hasNext}
+            className={cn(
+              "p-3 rounded-full transition-colors",
+              hasNext ? "text-slate-400 hover:text-white" : "text-slate-700"
+            )}
+            aria-label="Next"
+          >
+            <ChevronRight size={28} />
           </motion.button>
         </div>
 
         {/* Secondary controls */}
-        <div className="flex items-center justify-around mb-6">
+        <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
+          {/* Repeat */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleRepeat}
+            className={cn(
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
+              repeatMode !== 'off' ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-400 hover:text-white'
+            )}
+          >
+            <RepeatIcon size={18} />
+            <span>{repeatMode === 'one' ? 'One' : repeatMode === 'all' ? 'All' : 'Off'}</span>
+          </motion.button>
+
+          {/* Favorite */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleFavorite}
+            className={cn(
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
+              isFavoriteTrack ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-400 hover:text-white'
+            )}
+          >
+            <Heart size={18} className={isFavoriteTrack ? 'fill-current' : ''} />
+            <span>{isFavoriteTrack ? 'Liked' : 'Like'}</span>
+          </motion.button>
+
+          {/* Mute / Volume */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={toggleMute}
             className={cn(
-              'flex flex-col items-center gap-1.5 text-xs font-medium px-4 py-2.5 rounded-xl transition-all',
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
               isMuted ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-400 hover:text-white'
             )}
           >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             <span>{isMuted ? 'Muted' : 'Volume'}</span>
           </motion.button>
 
+          {/* Speed */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setSheet(sheet === 'speed' ? null : 'speed')}
             className={cn(
-              'flex flex-col items-center gap-1.5 text-xs font-medium px-4 py-2.5 rounded-xl transition-all',
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
               playbackSpeed !== 1 ? 'bg-violet-500/20 text-violet-400' : 'bg-slate-800 text-slate-400 hover:text-white'
             )}
           >
-            <Gauge size={20} />
+            <Gauge size={18} />
             <span>{getPlaybackSpeedLabel(playbackSpeed)}</span>
           </motion.button>
 
+          {/* Sleep Timer */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setSheet(sheet === 'sleep' ? null : 'sleep')}
             className={cn(
-              'flex flex-col items-center gap-1.5 text-xs font-medium px-4 py-2.5 rounded-xl transition-all',
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
               sleepTimerRemaining ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-white'
             )}
           >
-            <Timer size={20} />
+            <Timer size={18} />
             <span>{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : 'Sleep'}</span>
+          </motion.button>
+
+          {/* Add to Playlist */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSheet(sheet === 'playlist' ? null : 'playlist')}
+            className="flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
+          >
+            <ListPlus size={18} />
+            <span>Playlist</span>
           </motion.button>
         </div>
 
@@ -565,6 +708,13 @@ export function PlayerPage() {
             remaining={sleepTimerRemaining}
             onSet={setSleepTimer}
             onClear={clearSleepTimer}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === 'playlist' && (
+          <PlaylistSheet
+            playlists={playlists}
+            onSelect={handleAddToPlaylist}
             onClose={() => setSheet(null)}
           />
         )}

@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAudio } from '../../context/AudioContext';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../../lib/utils';
+import { getPlaylists, addToPlaylist } from '../../lib/db';
 import {
-  Play, Pause, SkipBack, SkipForward, X, Music2, Timer, Gauge, Moon, ChevronDown
+  Play, Pause, SkipBack, SkipForward, X, Music2, Timer, Gauge, Moon, ChevronDown,
+  Repeat, Repeat1, Heart, ListPlus, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import type { Playlist } from '../../types';
 
 function formatSleepTimer(ms: number | null): string {
   if (!ms || ms <= 0) return '';
@@ -120,6 +123,55 @@ function SleepSheet({
   );
 }
 
+function PlaylistSheet({
+  playlists,
+  onSelect,
+  onClose,
+}: {
+  playlists: Playlist[];
+  onSelect: (playlistId: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 rounded-t-3xl p-6 z-10 max-h-80 overflow-y-auto"
+    >
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+          <ListPlus size={18} className="text-primary" />
+          Add to Playlist
+        </h3>
+        <button onClick={onClose} className="p-2 rounded-xl bg-slate-700 text-slate-400 hover:text-white">
+          <X size={16} />
+        </button>
+      </div>
+      {playlists.length === 0 ? (
+        <p className="text-slate-400 text-center py-4">No playlists yet. Create one in the Playlists tab.</p>
+      ) : (
+        <div className="space-y-2">
+          {playlists.map((playlist) => (
+            <motion.button
+              key={playlist.id}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => onSelect(playlist.id!)}
+              className="w-full p-3 rounded-xl bg-slate-700 text-slate-200 text-left hover:bg-slate-600 transition-all"
+            >
+              {playlist.name}
+              {playlist.description && (
+                <p className="text-xs text-slate-400 mt-1">{playlist.description}</p>
+              )}
+            </motion.button>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export function MiniPlayer() {
   const navigate = useNavigate();
   const {
@@ -129,24 +181,40 @@ export function MiniPlayer() {
     duration,
     playbackSpeed,
     sleepTimerRemaining,
+    repeatMode,
+    hasNext,
+    hasPrevious,
+    isFavoriteTrack,
     togglePlayPause,
     seek,
     stop,
     setPlaybackSpeed,
     setSleepTimer,
     clearSleepTimer,
+    toggleRepeat,
+    playNext,
+    playPrevious,
+    toggleFavorite,
     play,
   } = useAudio();
 
   const [showControls, setShowControls] = useState(false);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);
   const [showSleepPicker, setShowSleepPicker] = useState(false);
+  const [showPlaylistPicker, setShowPlaylistPicker] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   const isLoading = playerState === 'loading';
   const isPlaying = playerState === 'playing';
   const hasTrack = !!currentTrack;
 
   const progress = duration > 0 ? (position / duration) * 100 : 0;
+
+  useEffect(() => {
+    if (showPlaylistPicker) {
+      getPlaylists().then(setPlaylists);
+    }
+  }, [showPlaylistPicker]);
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -170,7 +238,16 @@ export function MiniPlayer() {
     }
   };
 
+  const handleAddToPlaylist = async (playlistId: number) => {
+    if (currentTrack) {
+      await addToPlaylist(playlistId, currentTrack.id);
+      setShowPlaylistPicker(false);
+    }
+  };
+
   if (!hasTrack) return null;
+
+  const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
 
   return (
     <AnimatePresence>
@@ -264,11 +341,23 @@ export function MiniPlayer() {
 
               {/* Controls */}
               <div className="flex items-center gap-0.5 flex-shrink-0">
+                {hasPrevious && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { e.stopPropagation(); playPrevious(); }}
+                    className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                    aria-label="Previous"
+                  >
+                    <ChevronLeft size={16} />
+                  </motion.button>
+                )}
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); seek(Math.max(0, position - 15)); }}
-                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white transition-colors"
                   aria-label="Skip back 15s"
                 >
                   <SkipBack size={16} />
@@ -299,17 +388,29 @@ export function MiniPlayer() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); seek(Math.min(duration, position + 30)); }}
-                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white transition-colors"
                   aria-label="Skip forward 30s"
                 >
                   <SkipForward size={16} />
                 </motion.button>
 
+                {hasNext && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { e.stopPropagation(); playNext(); }}
+                    className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                    aria-label="Next"
+                  >
+                    <ChevronRight size={16} />
+                  </motion.button>
+                )}
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); setShowControls(!showControls); }}
-                  className={cn("p-2 transition-colors", showControls ? "text-primary" : "text-slate-500 hover:text-white")}
+                  className={cn("p-1.5 transition-colors", showControls ? "text-primary" : "text-slate-500 hover:text-white")}
                 >
                   <ChevronDown size={16} className={cn("transition-transform", showControls && "rotate-180")} />
                 </motion.button>
@@ -326,74 +427,115 @@ export function MiniPlayer() {
                   className="overflow-hidden border-t border-slate-800"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="p-3 flex items-center justify-around">
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setShowSleepPicker(!showSleepPicker); setShowSpeedPicker(false); }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
-                          sleepTimerRemaining ? "bg-amber-500/20 text-amber-400" : "bg-slate-800 text-slate-400 hover:text-white"
-                        )}
-                      >
-                        <Timer size={18} />
-                        <span className="text-[10px]">Sleep</span>
-                        {sleepTimerRemaining && <span className="text-[10px] font-mono">{formatSleepTimer(sleepTimerRemaining)}</span>}
-                      </motion.button>
-                      
-                      <AnimatePresence>
-                        {showSleepPicker && (
-                          <SleepSheet
-                            remaining={sleepTimerRemaining}
-                            onSet={setSleepTimer}
-                            onClear={clearSleepTimer}
-                            onClose={() => setShowSleepPicker(false)}
-                          />
-                        )}
-                      </AnimatePresence>
-                    </div>
+                  <div className="p-3 flex items-center justify-around flex-wrap gap-2">
+                    {/* Repeat */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={toggleRepeat}
+                      className={cn(
+                        "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                        repeatMode !== 'off' ? "bg-primary/20 text-primary" : "bg-slate-800 text-slate-400 hover:text-white"
+                      )}
+                    >
+                      <RepeatIcon size={18} />
+                      <span className="text-[10px]">{repeatMode === 'one' ? 'One' : repeatMode === 'all' ? 'All' : 'Off'}</span>
+                    </motion.button>
 
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setShowSpeedPicker(!showSpeedPicker); setShowSleepPicker(false); }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
-                          playbackSpeed !== 1 ? "bg-violet-500/20 text-violet-400" : "bg-slate-800 text-slate-400 hover:text-white"
-                        )}
-                      >
-                        <Gauge size={18} />
-                        <span className="text-[10px]">Speed</span>
-                        <span className="text-[10px] font-mono">{getPlaybackSpeedLabel(playbackSpeed)}</span>
-                      </motion.button>
-                      
-                      <AnimatePresence>
-                        {showSpeedPicker && (
-                          <SpeedSheet
-                            speed={playbackSpeed}
-                            onSelect={setPlaybackSpeed}
-                            onClose={() => setShowSpeedPicker(false)}
-                          />
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    {/* Favorite */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={toggleFavorite}
+                      className={cn(
+                        "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                        isFavoriteTrack ? "bg-rose-500/20 text-rose-400" : "bg-slate-800 text-slate-400 hover:text-white"
+                      )}
+                    >
+                      <Heart size={18} className={isFavoriteTrack ? "fill-current" : ""} />
+                      <span className="text-[10px]">{isFavoriteTrack ? 'Liked' : 'Like'}</span>
+                    </motion.button>
 
+                    {/* Sleep Timer */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => { setShowSleepPicker(!showSleepPicker); setShowSpeedPicker(false); setShowPlaylistPicker(false); }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                        sleepTimerRemaining ? "bg-amber-500/20 text-amber-400" : "bg-slate-800 text-slate-400 hover:text-white"
+                      )}
+                    >
+                      <Timer size={18} />
+                      <span className="text-[10px]">{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : 'Sleep'}</span>
+                    </motion.button>
+
+                    {/* Speed */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => { setShowSpeedPicker(!showSpeedPicker); setShowSleepPicker(false); setShowPlaylistPicker(false); }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                        playbackSpeed !== 1 ? "bg-violet-500/20 text-violet-400" : "bg-slate-800 text-slate-400 hover:text-white"
+                      )}
+                    >
+                      <Gauge size={18} />
+                      <span className="text-[10px]">{getPlaybackSpeedLabel(playbackSpeed)}</span>
+                    </motion.button>
+
+                    {/* Add to Playlist */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => { setShowPlaylistPicker(!showPlaylistPicker); setShowSpeedPicker(false); setShowSleepPicker(false); }}
+                      className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
+                    >
+                      <ListPlus size={18} />
+                      <span className="text-[10px]">Playlist</span>
+                    </motion.button>
+
+                    {/* Stop */}
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => stop()}
-                      className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
+                      className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-rose-400 transition-all"
                     >
                       <X size={18} />
-                      <span className="text-[10px]">Close</span>
+                      <span className="text-[10px]">Stop</span>
                     </motion.button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
+          {/* Bottom sheets */}
+          <AnimatePresence>
+            {showSpeedPicker && (
+              <SpeedSheet
+                speed={playbackSpeed}
+                onSelect={setPlaybackSpeed}
+                onClose={() => setShowSpeedPicker(false)}
+              />
+            )}
+            {showSleepPicker && (
+              <SleepSheet
+                remaining={sleepTimerRemaining}
+                onSet={setSleepTimer}
+                onClear={clearSleepTimer}
+                onClose={() => setShowSleepPicker(false)}
+              />
+            )}
+            {showPlaylistPicker && (
+              <PlaylistSheet
+                playlists={playlists}
+                onSelect={handleAddToPlaylist}
+                onClose={() => setShowPlaylistPicker(false)}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </AnimatePresence>

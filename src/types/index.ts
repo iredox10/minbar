@@ -114,6 +114,8 @@ export interface AppSettings {
 
 export type PlayerState = 'idle' | 'loading' | 'playing' | 'paused';
 
+export type RepeatMode = 'off' | 'one' | 'all';
+
 export interface CurrentTrack {
   id: string;
   title: string;
@@ -122,4 +124,18 @@ export interface CurrentTrack {
   speaker?: string;
   duration: number;
   type: 'episode' | 'radio' | 'dua';
+  seriesId?: string;
+  episodeNumber?: number;
+}
+
+export interface QueueItem {
+  id: string;
+  title: string;
+  audioUrl: string;
+  artworkUrl?: string;
+  speaker?: string;
+  duration: number;
+  type: 'episode' | 'radio' | 'dua';
+  seriesId?: string;
+  episodeNumber?: number;
 }

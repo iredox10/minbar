@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Clock, Download, Heart, Share2, ChevronRight } from 'lucide-react';
 import { getSeriesById, getEpisodesBySeries, isAppwriteConfigured } from '../lib/appwrite';
 import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
-import type { Series, Episode, CurrentTrack } from '../types';
+import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 
@@ -29,7 +29,7 @@ export function SeriesDetail() {
   const [isFav, setIsFav] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
 
-  const { play, currentTrack, playerState } = useAudio();
+  const { play, setQueue, currentTrack, playerState } = useAudio();
 
   useEffect(() => {
     async function loadSeries() {
@@ -87,7 +87,7 @@ export function SeriesDetail() {
     }
   };
 
-  const handlePlayEpisode = async (episode: Episode) => {
+  const handlePlayEpisode = async (episode: Episode, startIndex?: number) => {
     if (!series) return;
     
     const download = await getDownload(episode.$id);
@@ -100,14 +100,31 @@ export function SeriesDetail() {
       artworkUrl: series.artworkUrl,
       speaker: series.title,
       duration: episode.duration,
-      type: 'episode'
+      type: 'episode',
+      seriesId: series.$id,
+      episodeNumber: episode.episodeNumber,
     };
+
+    const queueItems: QueueItem[] = episodes.map(ep => ({
+      id: ep.$id,
+      title: ep.title,
+      audioUrl: ep.audioUrl,
+      artworkUrl: series.artworkUrl,
+      speaker: series.title,
+      duration: ep.duration,
+      type: 'episode' as const,
+      seriesId: series.$id,
+      episodeNumber: ep.episodeNumber,
+    }));
+
+    const episodeIndex = startIndex ?? episodes.findIndex(ep => ep.$id === episode.$id);
+    setQueue(queueItems, episodeIndex >= 0 ? episodeIndex : 0);
     play(track);
   };
 
   const handlePlayAll = () => {
     if (episodes.length > 0 && series) {
-      handlePlayEpisode(episodes[0]);
+      handlePlayEpisode(episodes[0], 0);
     }
   };
 
@@ -279,7 +296,7 @@ export function SeriesDetail() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => handlePlayEpisode(episode)}
+                      onClick={() => handlePlayEpisode(episode, index)}
                       className={cn(
                         "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative overflow-hidden",
                         isPlaying(episode.$id)
