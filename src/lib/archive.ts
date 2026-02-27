@@ -35,8 +35,24 @@ export interface ParsedArchiveItem {
 }
 
 export async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata | null> {
-  // Clean the identifier - remove spaces, use proper encoding
-  const cleanIdentifier = identifier.trim().replace(/\s+/g, '-');
+  // Accept either a bare identifier OR a full archive.org URL and extract the identifier
+  let cleanIdentifier = identifier.trim();
+
+  // Strip full URL forms:
+  //   https://archive.org/details/<id>
+  //   https://archive.org/download/<id>
+  //   https://archive.org/metadata/<id>
+  //   archive.org/details/<id>  (no protocol)
+  const urlMatch = cleanIdentifier.match(
+    /(?:https?:\/\/)?archive\.org\/(?:details|download|metadata)\/([^/?#\s]+)/i
+  );
+  if (urlMatch) {
+    cleanIdentifier = urlMatch[1];
+  }
+
+  // Replace spaces with hyphens (archive.org convention)
+  cleanIdentifier = cleanIdentifier.replace(/\s+/g, '-');
+
   const archiveUrl = `https://archive.org/metadata/${cleanIdentifier}`;
   
   console.log('Fetching archive metadata for:', cleanIdentifier);
