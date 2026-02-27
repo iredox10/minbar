@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { audioManager } from '../lib/audio';
-import { updatePlaybackProgress, isFavorite, addFavorite, removeFavorite } from '../lib/db';
+import { updatePlaybackProgress, isFavorite, addFavorite, removeFavorite, saveLocalPlaybackState, getLocalPlaybackState, getUnsyncedPlaybackState } from '../lib/db';
 import { trackPlayStart } from '../lib/analytics';
-import { savePlaybackState, loadPlaybackState, clearPlaybackState, getEpisodesBySeries } from '../lib/appwrite';
+import { savePlaybackState, loadPlaybackState, clearPlaybackState, getEpisodesBySeries, getDeviceId } from '../lib/appwrite';
 import type { CurrentTrack, PlayerState, RepeatMode, QueueItem } from '../types';
 
 interface AudioContextType {
@@ -102,35 +102,192 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Sync state helper function
+  const syncState = useCallback(async (track: CurrentTrack, pos: number, speed: number) => {
+    const isOnline = navigator.onLine;
+    const deviceId = getDeviceId();
+    
+    // Always save locally first for fast UI and offline support
+    await saveLocalPlaybackState({
+      deviceId,
+      trackId: track.id,
+      trackType: track.type,
+      trackTitle: track.title,
+      trackAudioUrl: track.audioUrl,
+      trackArtworkUrl: track.artworkUrl,
+      trackSpeaker: track.speaker,
+      trackDuration: track.duration,
+      trackSeriesId: track.seriesId,
+      trackEpisodeNumber: track.episodeNumber,
+      position: pos,
+      playbackSpeed: speed,
+      updatedAt: new Date(),
+      synced: isOnline // Only mark synced if we're online and about to push
+    });
+
+    if (isOnline) {
+      try {
+        await savePlaybackState(track, pos, speed);
+        // Mark as synced if successful
+        await saveLocalPlaybackState({
+          deviceId,
+          trackId: track.id,
+          trackType: track.type,
+          trackTitle: track.title,
+          trackAudioUrl: track.audioUrl,
+          trackArtworkUrl: track.artworkUrl,
+          trackSpeaker: track.speaker,
+          trackDuration: track.duration,
+          trackSeriesId: track.seriesId,
+          trackEpisodeNumber: track.episodeNumber,
+          position: pos,
+          playbackSpeed: speed,
+          updatedAt: new Date(),
+          synced: true
+        });
+      } catch (error) {
+        console.error('Failed to sync state to cloud, will retry when online', error);
+      }
+    }
+  }, []);
+
+  // Offline/Online sync handling
+  useEffect(() => {
+    const handleOnline = async () => {
+      console.log('App is online, checking for unsynced playback state...');
+      const unsynced = await getUnsyncedPlaybackState();
+      
+      if (unsynced) {
+        try {
+          const track: CurrentTrack = {
+            id: unsynced.trackId,
+            title: unsynced.trackTitle,
+            audioUrl: unsynced.trackAudioUrl,
+            artworkUrl: unsynced.trackArtworkUrl,
+            speaker: unsynced.trackSpeaker,
+            duration: unsynced.trackDuration,
+            type: unsynced.trackType,
+            seriesId: unsynced.trackSeriesId,
+            episodeNumber: unsynced.trackEpisodeNumber,
+          };
+          
+          await savePlaybackState(track, unsynced.position, unsynced.playbackSpeed);
+          
+          // Mark as synced locally
+          await saveLocalPlaybackState({
+            ...unsynced,
+            synced: true
+          });
+          console.log('Successfully synced local playback state to cloud');
+        } catch (error) {
+          console.error('Failed to sync offline playback state to cloud', error);
+        }
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
   // Load saved playback state on mount
   useEffect(() => {
     async function loadSavedState() {
       try {
-        const saved = await loadPlaybackState();
-        if (saved && saved.track) {
-          setCurrentTrack(saved.track);
-          setPosition(saved.position);
-          setPlaybackSpeedState(saved.playbackSpeed);
-          audioManager.setPlaybackSpeed(saved.playbackSpeed);
+        const deviceId = getDeviceId();
+        
+        // Check local state first (might be newer if they played offline)
+        const localState = await getLocalPlaybackState(deviceId);
+        let cloudState = null;
+        
+        if (navigator.onLine) {
+          cloudState = await loadPlaybackState();
+        }
+
+        // Determine which state to use
+        let finalState = null;
+        
+        if (localState && cloudState) {
+          // Use local state if unsynced (it may have been updated offline),
+          // otherwise prefer cloud state
+          finalState = (!localState.synced) ? {
+            track: {
+              id: localState.trackId,
+              title: localState.trackTitle,
+              audioUrl: localState.trackAudioUrl,
+              artworkUrl: localState.trackArtworkUrl,
+              speaker: localState.trackSpeaker,
+              duration: localState.trackDuration,
+              type: localState.trackType,
+              seriesId: localState.trackSeriesId,
+              episodeNumber: localState.trackEpisodeNumber,
+            },
+            position: localState.position,
+            playbackSpeed: localState.playbackSpeed
+          } : cloudState;
+        } else if (localState) {
+          finalState = {
+            track: {
+              id: localState.trackId,
+              title: localState.trackTitle,
+              audioUrl: localState.trackAudioUrl,
+              artworkUrl: localState.trackArtworkUrl,
+              speaker: localState.trackSpeaker,
+              duration: localState.trackDuration,
+              type: localState.trackType,
+              seriesId: localState.trackSeriesId,
+              episodeNumber: localState.trackEpisodeNumber,
+            },
+            position: localState.position,
+            playbackSpeed: localState.playbackSpeed
+          };
+        } else if (cloudState) {
+          finalState = cloudState;
+          
+          // Save cloud state locally so we have it for next offline startup
+          if (finalState.track) {
+            await saveLocalPlaybackState({
+              deviceId,
+              trackId: finalState.track.id,
+              trackType: finalState.track.type,
+              trackTitle: finalState.track.title,
+              trackAudioUrl: finalState.track.audioUrl,
+              trackArtworkUrl: finalState.track.artworkUrl,
+              trackSpeaker: finalState.track.speaker,
+              trackDuration: finalState.track.duration,
+              trackSeriesId: finalState.track.seriesId,
+              trackEpisodeNumber: finalState.track.episodeNumber,
+              position: finalState.position,
+              playbackSpeed: finalState.playbackSpeed,
+              updatedAt: new Date(),
+              synced: true
+            });
+          }
+        }
+
+        if (finalState && finalState.track) {
+          setCurrentTrack(finalState.track);
+          setPosition(finalState.position);
+          setPlaybackSpeedState(finalState.playbackSpeed);
+          audioManager.setPlaybackSpeed(finalState.playbackSpeed);
           setPlayerState('idle');
           
           // If track has seriesId, load the series episodes into queue
-          if (saved.track.seriesId) {
-            const episodes = await getEpisodesBySeries(saved.track.seriesId);
+          if (finalState.track.seriesId && navigator.onLine) {
+            const episodes = await getEpisodesBySeries(finalState.track.seriesId);
             if (episodes.length > 0) {
               const queueItems: QueueItem[] = episodes.map(ep => ({
                 id: ep.$id,
                 title: ep.title,
                 audioUrl: ep.audioUrl,
-                artworkUrl: saved.track?.artworkUrl,
-                speaker: saved.track?.speaker,
+                artworkUrl: finalState.track?.artworkUrl,
+                speaker: finalState.track?.speaker,
                 duration: ep.duration,
                 type: 'episode' as const,
-                seriesId: saved.track?.seriesId,
+                seriesId: finalState.track?.seriesId,
                 episodeNumber: ep.episodeNumber,
               }));
               setQueueState(queueItems);
-              const idx = queueItems.findIndex(item => item.id === saved.track?.id);
+              const idx = queueItems.findIndex(item => item.id === finalState.track?.id);
               setCurrentIndex(idx >= 0 ? idx : 0);
             }
           }
@@ -149,7 +306,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     const syncInterval = setInterval(() => {
       if (currentTrackRef.current && playerState !== 'idle') {
-        savePlaybackState(
+        syncState(
           currentTrackRef.current,
           positionRef.current,
           playbackSpeedRef.current
@@ -158,7 +315,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }, CLOUD_SYNC_INTERVAL);
 
     return () => clearInterval(syncInterval);
-  }, [initialized, playerState]);
+  }, [initialized, playerState, syncState]);
 
   // Sleep timer check
   useEffect(() => {

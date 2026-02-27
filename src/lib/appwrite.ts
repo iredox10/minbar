@@ -241,7 +241,7 @@ interface SavedPlaybackState {
   updatedAt: string;
 }
 
-function getDeviceId(): string {
+export function getDeviceId(): string {
   let deviceId = localStorage.getItem('mc_device_id');
   if (!deviceId) {
     deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

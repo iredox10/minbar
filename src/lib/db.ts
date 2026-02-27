@@ -8,6 +8,24 @@ import type {
   AppSettings
 } from '../types';
 
+export interface SavedPlaybackState {
+  id?: number;
+  deviceId: string;
+  trackId: string;
+  trackType: 'episode' | 'radio' | 'dua';
+  trackTitle: string;
+  trackAudioUrl: string;
+  trackArtworkUrl?: string;
+  trackSpeaker?: string;
+  trackDuration: number;
+  trackSeriesId?: string;
+  trackEpisodeNumber?: number;
+  position: number;
+  playbackSpeed: number;
+  updatedAt: Date;
+  synced: boolean;
+}
+
 const db = new Dexie('MuslimCentralDB') as Dexie & {
   downloads: EntityTable<DownloadedEpisode, 'id'>;
   favorites: EntityTable<Favorite, 'id'>;
@@ -15,15 +33,17 @@ const db = new Dexie('MuslimCentralDB') as Dexie & {
   playlistItems: EntityTable<PlaylistItem, 'id'>;
   playbackHistory: EntityTable<PlaybackHistory, 'id'>;
   settings: EntityTable<AppSettings, 'id'>;
+  playbackState: EntityTable<SavedPlaybackState, 'id'>;
 };
 
-db.version(1).stores({
+db.version(2).stores({
   downloads: '++id, episodeId, seriesId, downloadedAt',
   favorites: '++id, [type+itemId], addedAt',
   playlists: '++id, createdAt',
   playlistItems: '++id, playlistId, episodeId, addedAt',
   playbackHistory: '++id, episodeId, playedAt',
-  settings: '++id'
+  settings: '++id',
+  playbackState: '++id, deviceId, updatedAt, synced'
 });
 
 export { db };
@@ -188,4 +208,25 @@ export async function removeFromPlaylist(playlistId: number, episodeId: string):
     .where('[playlistId+episodeId]')
     .equals([playlistId, episodeId])
     .delete();
+}
+
+export async function saveLocalPlaybackState(state: Omit<SavedPlaybackState, 'id'>): Promise<void> {
+  const existing = await db.playbackState.where('deviceId').equals(state.deviceId).first();
+  if (existing) {
+    await db.playbackState.update(existing.id!, state);
+  } else {
+    await db.playbackState.add(state as SavedPlaybackState);
+  }
+}
+
+export async function getLocalPlaybackState(deviceId: string): Promise<SavedPlaybackState | undefined> {
+  return db.playbackState.where('deviceId').equals(deviceId).first();
+}
+
+export async function clearLocalPlaybackState(deviceId: string): Promise<void> {
+  await db.playbackState.where('deviceId').equals(deviceId).delete();
+}
+
+export async function getUnsyncedPlaybackState(): Promise<SavedPlaybackState | undefined> {
+  return db.playbackState.where('synced').equals(0).first();
 }
