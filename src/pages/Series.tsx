@@ -24,6 +24,7 @@ export function Series() {
   const [filteredSeries, setFilteredSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSeries() {
@@ -47,18 +48,22 @@ export function Series() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredSeries(series);
-    } else {
+    let result = series;
+
+    if (selectedCategory) {
+      result = result.filter(s => s.category === selectedCategory);
+    }
+
+    if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      setFilteredSeries(
-        series.filter(s => 
-          s.title.toLowerCase().includes(query) ||
-          s.category?.toLowerCase().includes(query)
-        )
+      result = result.filter(s =>
+        s.title.toLowerCase().includes(query) ||
+        s.category?.toLowerCase().includes(query)
       );
     }
-  }, [searchQuery, series]);
+
+    setFilteredSeries(result);
+  }, [searchQuery, selectedCategory, series]);
 
   const categories = [...new Set(series.map(s => s.category).filter(Boolean))];
 
@@ -87,10 +92,10 @@ export function Series() {
           {categories.length > 0 && (
             <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSelectedCategory(null)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors",
-                  searchQuery === '' ? "bg-primary text-slate-900" : "bg-slate-800/50 text-slate-300"
+                  selectedCategory === null ? "bg-primary text-slate-900" : "bg-slate-800/50 text-slate-300"
                 )}
               >
                 All
@@ -98,10 +103,10 @@ export function Series() {
               {categories.map(cat => (
                 <button
                   key={cat}
-                  onClick={() => setSearchQuery(cat || '')}
+                  onClick={() => setSelectedCategory(selectedCategory === cat ? null : (cat ?? null))}
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors",
-                    searchQuery.toLowerCase() === cat?.toLowerCase() ? "bg-primary text-slate-900" : "bg-slate-800/50 text-slate-300"
+                    selectedCategory === cat ? "bg-primary text-slate-900" : "bg-slate-800/50 text-slate-300"
                   )}
                 >
                   {cat}

@@ -23,6 +23,7 @@ const Downloads = lazy(() => import('./pages/Downloads').then(m => ({ default: m
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const EpisodeDetail = lazy(() => import('./pages/EpisodeDetail').then(m => ({ default: m.EpisodeDetail })));
 const Series = lazy(() => import('./pages/Series').then(m => ({ default: m.Series })));
+const Library = lazy(() => import('./pages/Library').then(m => ({ default: m.Library })));
 const LatestEpisodes = lazy(() => import('./pages/LatestEpisodes').then(m => ({ default: m.LatestEpisodes })));
 
 // Lazy load admin pages
@@ -116,6 +117,7 @@ function App() {
               <Route path="/duas/:id" element={<Duas />} />
               <Route path="/downloads" element={<Downloads />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/library" element={<Library />} />
             </Route>
             <Route
               path="/admin/*"

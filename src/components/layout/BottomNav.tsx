@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, PlayCircle, BookOpen, Download, Settings, Search } from 'lucide-react';
+import { Home, PlayCircle, Library, Download, Settings, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
@@ -7,10 +7,12 @@ const navItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/search', icon: Search, label: 'Search' },
   { path: '/player', icon: PlayCircle, label: 'Player' },
-  { path: '/duas', icon: BookOpen, label: 'Duas' },
+  { path: '/library', icon: Library, label: 'Library' },
   { path: '/downloads', icon: Download, label: 'Downloads' },
   { path: '/settings', icon: Settings, label: 'Settings' }
 ];
+
+const LIBRARY_PATHS = ['/library', '/podcasts', '/radio', '/favorites', '/playlists', '/history', '/duas'];
 
 export function BottomNav() {
   const location = useLocation();
@@ -21,8 +23,14 @@ export function BottomNav() {
       
       <div className="relative flex items-center justify-around h-16 max-w-lg mx-auto px-4">
         {navItems.map(({ path, icon: Icon, label }) => {
-          const isActive = location.pathname === path || 
-            (path !== '/' && location.pathname.startsWith(path));
+          let isActive = location.pathname === path;
+          if (!isActive && path !== '/') {
+            if (path === '/library') {
+              isActive = LIBRARY_PATHS.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
+            } else {
+              isActive = location.pathname.startsWith(path);
+            }
+          }
           
           return (
             <NavLink
