@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, Clock, User, BookOpen, X, TrendingUp } from 'lucide-react';
-import { searchEpisodes, getAllSpeakers, getFeaturedSeries, isAppwriteConfigured } from '../lib/appwrite';
+import { searchEpisodes, searchSpeakers, searchSeries, isAppwriteConfigured } from '../lib/appwrite';
 import type { Episode, Speaker, Series, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
@@ -56,22 +56,13 @@ export function SearchPage() {
       try {
         const [episodesData, speakersData, seriesData] = await Promise.all([
           searchEpisodes(query),
-          getAllSpeakers(),
-          getFeaturedSeries(20)
+          searchSpeakers(query),
+          searchSeries(query)
         ]);
 
-        const lowerQuery = query.toLowerCase();
-        const filteredSpeakers = speakersData.filter(s => 
-          s.name.toLowerCase().includes(lowerQuery)
-        );
-        const filteredSeries = seriesData.filter(s => 
-          s.title.toLowerCase().includes(lowerQuery) ||
-          (s.description && s.description.toLowerCase().includes(lowerQuery))
-        );
-
         setEpisodes(episodesData);
-        setSpeakers(filteredSpeakers);
-        setSeries(filteredSeries);
+        setSpeakers(speakersData);
+        setSeries(seriesData);
       } catch (error) {
         console.error('Search failed:', error);
       } finally {
@@ -135,6 +126,8 @@ export function SearchPage() {
   const filteredEpisodes = activeTab === 'all' || activeTab === 'episodes' ? episodes : [];
   const filteredSpeakers = activeTab === 'all' || activeTab === 'speakers' ? speakers : [];
   const filteredSeries = activeTab === 'all' || activeTab === 'series' ? series : [];
+
+  const hasFilteredResults = filteredEpisodes.length > 0 || filteredSpeakers.length > 0 || filteredSeries.length > 0;
 
   const tabs: { id: SearchTab; label: string; count: number }[] = [
     { id: 'all', label: 'All', count: episodes.length + speakers.length + series.length },
@@ -237,23 +230,23 @@ export function SearchPage() {
           </div>
         ) : (
           <AnimatePresence mode="wait">
-            {query.trim() && !hasResults && (
+            {query.trim() && !hasFilteredResults && !loading && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center py-16"
               >
                 <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg">No results found</p>
+                <p className="text-slate-400 text-lg">No results found for {activeTab !== 'all' ? activeTab : 'this search'}</p>
                 <p className="text-sm text-slate-500 mt-2">
                   Try different keywords or check spelling
                 </p>
               </motion.div>
             )}
 
-            {hasResults && (
+            {hasFilteredResults && (
               <motion.div
-                key="results"
+                key={`results-${activeTab}`}
                 variants={container}
                 initial="hidden"
                 animate="show"

@@ -106,6 +106,26 @@ export async function getAllSeries(): Promise<Series[]> {
   return response.documents as unknown as Series[];
 }
 
+export async function searchSpeakers(query: string): Promise<Speaker[]> {
+  if (!isAppwriteConfigured()) return [];
+  const response = await databases.listDocuments(
+    DATABASE_ID,
+    SPEAKERS_COLLECTION,
+    [Query.search('name', query), Query.limit(20)]
+  );
+  return response.documents as unknown as Speaker[];
+}
+
+export async function searchSeries(query: string): Promise<Series[]> {
+  if (!isAppwriteConfigured()) return [];
+  const response = await databases.listDocuments(
+    DATABASE_ID,
+    SERIES_COLLECTION,
+    [Query.search('title', query), Query.limit(20)]
+  );
+  return response.documents as unknown as Series[];
+}
+
 export async function getEpisodesBySeries(seriesId: string): Promise<Episode[]> {
   if (!isAppwriteConfigured()) return [];
   const response = await databases.listDocuments(
