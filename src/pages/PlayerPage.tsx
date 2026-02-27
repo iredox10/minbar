@@ -6,12 +6,14 @@ import {
   Play, Pause, X, Music2, Timer, Gauge,
   ChevronDown, RotateCcw, RotateCw, Volume2, VolumeX, Moon,
   Repeat, Repeat1, Heart, ListPlus, ChevronLeft, ChevronRight,
-  Share2
+  Share2, Download, CheckCircle2
 } from 'lucide-react';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
 import { getPlaylists, addToPlaylist } from '../lib/db';
 import type { Playlist } from '../types';
 import { ShareSheet } from '../components/audio/ShareSheet';
+import { DownloadSheet } from '../components/audio/DownloadSheet';
+import { useDownload } from '../hooks/useDownload';
 
 function formatSleepTimer(ms: number | null): string {
   if (!ms || ms <= 0) return '';
@@ -358,8 +360,18 @@ export function PlayerPage() {
     play,
   } = useAudio();
 
-  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | 'share' | null>(null);
+  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | 'share' | 'download' | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+
+  // Download state for the current track
+  const { status: dlStatus } = useDownload(
+    currentTrack?.id ?? '',
+    currentTrack?.audioUrl ?? '',
+    currentTrack?.title ?? '',
+    currentTrack?.seriesId,
+    undefined,
+    currentTrack?.duration,
+  );
   const isPlaying = playerState === 'playing';
   const isLoading = playerState === 'loading';
 
@@ -693,6 +705,27 @@ export function PlayerPage() {
             <Share2 size={18} />
             <span>Share</span>
           </motion.button>
+
+          {/* Download episode */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSheet(sheet === 'download' ? null : 'download')}
+            disabled={currentTrack?.type === 'radio'}
+            className={cn(
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
+              dlStatus === 'done'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : sheet === 'download'
+                ? 'bg-primary/20 text-primary'
+                : currentTrack?.type === 'radio'
+                ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
+            )}
+          >
+            {dlStatus === 'done' ? <CheckCircle2 size={18} /> : <Download size={18} />}
+            <span>{dlStatus === 'done' ? 'Saved' : 'Save'}</span>
+          </motion.button>
         </div>
 
         {/* Volume slider */}
@@ -744,6 +777,12 @@ export function PlayerPage() {
             track={currentTrack}
             currentPosition={position}
             totalDuration={duration}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === 'download' && currentTrack && (
+          <DownloadSheet
+            track={currentTrack}
             onClose={() => setSheet(null)}
           />
         )}
