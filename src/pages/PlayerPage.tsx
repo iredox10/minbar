@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, X, Music2, Timer, Gauge,
   ChevronDown, RotateCcw, RotateCw, Volume2, VolumeX, Moon,
-  Repeat, Repeat1, Heart, ListPlus, ChevronLeft, ChevronRight
+  Repeat, Repeat1, Heart, ListPlus, ChevronLeft, ChevronRight,
+  Share2
 } from 'lucide-react';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
 import { getPlaylists, addToPlaylist } from '../lib/db';
 import type { Playlist } from '../types';
+import { ShareSheet } from '../components/audio/ShareSheet';
 
 function formatSleepTimer(ms: number | null): string {
   if (!ms || ms <= 0) return '';
@@ -356,7 +358,7 @@ export function PlayerPage() {
     play,
   } = useAudio();
 
-  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | null>(null);
+  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | 'share' | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const isPlaying = playerState === 'playing';
   const isLoading = playerState === 'loading';
@@ -672,6 +674,25 @@ export function PlayerPage() {
             <ListPlus size={18} />
             <span>Playlist</span>
           </motion.button>
+
+          {/* Share clip */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSheet(sheet === 'share' ? null : 'share')}
+            disabled={currentTrack?.type === 'radio'}
+            className={cn(
+              'flex flex-col items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl transition-all',
+              sheet === 'share'
+                ? 'bg-primary/20 text-primary'
+                : currentTrack?.type === 'radio'
+                ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
+            )}
+          >
+            <Share2 size={18} />
+            <span>Share</span>
+          </motion.button>
         </div>
 
         {/* Volume slider */}
@@ -715,6 +736,14 @@ export function PlayerPage() {
           <PlaylistSheet
             playlists={playlists}
             onSelect={handleAddToPlaylist}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === 'share' && currentTrack && (
+          <ShareSheet
+            track={currentTrack}
+            currentPosition={position}
+            totalDuration={duration}
             onClose={() => setSheet(null)}
           />
         )}
