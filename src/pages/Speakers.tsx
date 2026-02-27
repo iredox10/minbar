@@ -1,23 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, TrendingUp, ArrowLeft } from 'lucide-react';
 import { getAllSpeakers, isAppwriteConfigured } from '../lib/appwrite';
 import type { Speaker } from '../types';
-
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
 
 export function Speakers() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
@@ -99,120 +85,120 @@ export function Speakers() {
           ))}
         </div>
       ) : (
-        <div className="p-4 space-y-8 pb-24">
-          {featuredSpeakers.length > 0 && (
-            <motion.section
-              variants={container}
-              initial="hidden"
-              animate="show"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={18} className="text-primary" />
-                <h2 className="text-lg font-semibold text-slate-100">Featured</h2>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {featuredSpeakers.map((speaker, index) => (
-                  <motion.div
-                    key={speaker.$id}
-                    variants={item}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Link
-                      to={`/podcasts/speaker/${speaker.slug}`}
-                      className="block group"
+        <AnimatePresence mode="wait">
+          <div key={searchQuery} className="p-4 space-y-8 pb-24">
+            {featuredSpeakers.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp size={18} className="text-primary" />
+                  <h2 className="text-lg font-semibold text-slate-100">Featured</h2>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {featuredSpeakers.map((speaker, index) => (
+                    <motion.div
+                      key={speaker.$id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.25) }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <div className="glass-card rounded-2xl p-4 text-center">
-                        <div className="relative mx-auto w-20 h-20 mb-3">
-                          <img
-                            src={speaker.imageUrl}
-                            alt={speaker.name}
-                            className="w-full h-full rounded-full object-cover ring-2 ring-slate-700 group-hover:ring-primary transition-all"
-                          />
-                          {index === 0 && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <TrendingUp size={10} className="text-slate-900" />
-                            </div>
+                      <Link
+                        to={`/podcasts/speaker/${speaker.slug}`}
+                        className="block group"
+                      >
+                        <div className="glass-card rounded-2xl p-4 text-center">
+                          <div className="relative mx-auto w-20 h-20 mb-3">
+                            <img
+                              src={speaker.imageUrl}
+                              alt={speaker.name}
+                              className="w-full h-full rounded-full object-cover ring-2 ring-slate-700 group-hover:ring-primary transition-all"
+                            />
+                            {index === 0 && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                <TrendingUp size={10} className="text-slate-900" />
+                              </div>
+                            )}
+                          </div>
+                          <p className="font-medium text-slate-100 group-hover:text-primary transition-colors truncate">
+                            {speaker.name}
+                          </p>
+                          {speaker.bio && (
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                              {speaker.bio}
+                            </p>
                           )}
                         </div>
-                        <p className="font-medium text-slate-100 group-hover:text-primary transition-colors truncate">
-                          {speaker.name}
-                        </p>
-                        {speaker.bio && (
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            {speaker.bio}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          )}
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {otherSpeakers.length > 0 && (
-            <motion.section
-              variants={container}
-              initial="hidden"
-              animate="show"
-            >
-              <h2 className="text-lg font-semibold text-slate-100 mb-4">
-                {featuredSpeakers.length > 0 ? 'All Speakers' : 'Speakers'}
-              </h2>
-              
-              <div className="space-y-3">
-                {otherSpeakers.map((speaker) => (
-                  <motion.div
-                    key={speaker.$id}
-                    variants={item}
-                    whileHover={{ x: 4 }}
-                  >
-                    <Link
-                      to={`/podcasts/speaker/${speaker.slug}`}
-                      className="flex items-center gap-4 p-4 glass-card rounded-2xl group"
+            {otherSpeakers.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold text-slate-100 mb-4">
+                  {featuredSpeakers.length > 0 ? 'All Speakers' : 'Speakers'}
+                </h2>
+                
+                <div className="space-y-3">
+                  {otherSpeakers.map((speaker, index) => (
+                    <motion.div
+                      key={speaker.$id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.3) }}
+                      whileHover={{ x: 4 }}
                     >
-                      <img
-                        src={speaker.imageUrl}
-                        alt={speaker.name}
-                        className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-700 group-hover:ring-primary transition-all"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-100 group-hover:text-primary transition-colors">
-                          {speaker.name}
-                        </p>
-                        {speaker.bio && (
-                          <p className="text-sm text-slate-500 truncate">
-                            {speaker.bio}
+                      <Link
+                        to={`/podcasts/speaker/${speaker.slug}`}
+                        className="flex items-center gap-4 p-4 glass-card rounded-2xl group"
+                      >
+                        <img
+                          src={speaker.imageUrl}
+                          alt={speaker.name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-700 group-hover:ring-primary transition-all"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-100 group-hover:text-primary transition-colors">
+                            {speaker.name}
                           </p>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          )}
+                          {speaker.bio && (
+                            <p className="text-sm text-slate-500 truncate">
+                              {speaker.bio}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {filteredSpeakers.length === 0 && !loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
-                <User className="w-10 h-10 text-slate-600" />
-              </div>
-              <p className="text-slate-400">No speakers found</p>
-              {searchQuery && (
-                <p className="text-sm text-slate-500 mt-2">
-                  Try a different search term
-                </p>
-              )}
-            </motion.div>
-          )}
-        </div>
+            {filteredSpeakers.length === 0 && (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-16"
+              >
+                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
+                  <User className="w-10 h-10 text-slate-600" />
+                </div>
+                <p className="text-slate-400">No speakers found</p>
+                {searchQuery && (
+                  <p className="text-sm text-slate-500 mt-2">
+                    Try a different search term
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </div>
+        </AnimatePresence>
       )}
     </div>
   );

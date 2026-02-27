@@ -8,18 +8,6 @@ import type { Episode, Speaker, Series, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
 
 type SearchTab = 'all' | 'episodes' | 'speakers' | 'series';
 
@@ -250,9 +238,10 @@ export function SearchPage() {
             {hasFilteredResults && (
               <motion.div
                 key={`results-${activeTab}`}
-                variants={container}
-                initial="hidden"
-                animate="show"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 className="space-y-8"
               >
                 {filteredSpeakers.length > 0 && (
@@ -263,10 +252,12 @@ export function SearchPage() {
                     </div>
                     
                     <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                      {filteredSpeakers.slice(0, 10).map((speaker) => (
+                      {filteredSpeakers.slice(0, 10).map((speaker, index) => (
                         <motion.div
                           key={speaker.$id}
-                          variants={item}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.25) }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
@@ -298,10 +289,12 @@ export function SearchPage() {
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {filteredSeries.slice(0, 6).map((s) => (
+                      {filteredSeries.slice(0, 6).map((s, index) => (
                         <motion.div
                           key={s.$id}
-                          variants={item}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.25) }}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
@@ -341,10 +334,12 @@ export function SearchPage() {
                     </div>
                     
                     <div className="space-y-3">
-                      {filteredEpisodes.slice(0, 10).map((episode) => (
+                      {filteredEpisodes.slice(0, 10).map((episode, index) => (
                         <motion.div
                           key={episode.$id}
-                          variants={item}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.3) }}
                           whileHover={{ x: 4 }}
                           className={cn(
                             "glass-card rounded-2xl p-4 group cursor-pointer",

@@ -1,23 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, BookOpen, ArrowLeft, Play } from 'lucide-react';
 import { getAllSeries, isAppwriteConfigured } from '../lib/appwrite';
 import type { Series } from '../types';
 import { cn } from '../lib/utils';
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
 
 export function Series() {
   const [series, setSeries] = useState<Series[]>([]);
@@ -125,20 +112,25 @@ export function Series() {
         </div>
       ) : (
         <div className="p-4 pb-24">
-          {filteredSeries.length > 0 ? (
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-            >
-              {filteredSeries.map((s, index) => (
-                <motion.div
-                  key={s.$id}
-                  variants={item}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
+          <AnimatePresence mode="wait">
+            {filteredSeries.length > 0 ? (
+              <motion.div
+                key={`${selectedCategory ?? 'all'}-${searchQuery}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+              >
+                {filteredSeries.map((s, index) => (
+                  <motion.div
+                    key={s.$id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.3) }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                   <Link
                     to={`/podcasts/series/${s.$id}`}
                     className="block group"
@@ -169,23 +161,26 @@ export function Series() {
                 </motion.div>
               ))}
             </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
-                <BookOpen className="w-10 h-10 text-slate-600" />
-              </div>
-              <p className="text-slate-400">No series found</p>
-              {searchQuery && (
-                <p className="text-sm text-slate-500 mt-2">
-                  Try a different search term
-                </p>
-              )}
-            </motion.div>
-          )}
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-16"
+              >
+                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
+                  <BookOpen className="w-10 h-10 text-slate-600" />
+                </div>
+                <p className="text-slate-400">No series found</p>
+                {searchQuery && (
+                  <p className="text-sm text-slate-500 mt-2">
+                    Try a different search term
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
