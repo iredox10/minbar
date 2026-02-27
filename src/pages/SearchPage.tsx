@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, Clock, User, BookOpen, X, TrendingUp } from 'lucide-react';
 import { searchEpisodes, searchSpeakers, searchSeries, isAppwriteConfigured } from '../lib/appwrite';
+import { trackSearch } from '../lib/analytics';
 import type { Episode, Speaker, Series, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
@@ -86,6 +87,8 @@ export function SearchPage() {
   const saveSearch = useCallback((searchQuery: string) => {
     if (!searchQuery.trim()) return;
     
+    trackSearch(searchQuery);
+
     const updated = [
       searchQuery,
       ...recentSearches.filter(s => s !== searchQuery)

@@ -1,4 +1,4 @@
-import { adminDatabases, DATABASE_ID, ID } from './admin';
+import { adminDatabases, DATABASE_ID, ID, Query } from './admin';
 
 export const ANALYTICS_COLLECTION = 'analytics';
 
@@ -136,7 +136,7 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
     const response = await adminDatabases.listDocuments(
       DATABASE_ID,
       ANALYTICS_COLLECTION,
-      []
+      [Query.greaterThanEqual('timestamp', startDate.toISOString())]
     );
 
     const documents = response.documents;
@@ -157,7 +157,7 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
     const playsByDay = Array.from(playsByDayMap.entries())
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-30);
+      .slice(-days);
 
     const episodeCounts = new Map<string, { title: string; count: number }>();
     documents

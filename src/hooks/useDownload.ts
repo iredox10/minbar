@@ -13,6 +13,7 @@ import {
   saveDownload,
   deleteDownload,
 } from '../lib/db';
+import { trackDownload } from '../lib/analytics';
 import type { DownloadedEpisode } from '../types';
 
 export type DownloadStatus =
@@ -122,6 +123,7 @@ export function useDownload(
       const id = await saveDownload(record);
       const saved: DownloadedEpisode = { id, ...record };
 
+      trackDownload(episodeId, title);
       setDownload(saved);
       setProgress(100);
       setStatus('done');

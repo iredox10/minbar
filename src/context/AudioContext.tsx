@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { audioManager } from '../lib/audio';
 import { updatePlaybackProgress, isFavorite, addFavorite, removeFavorite, saveLocalPlaybackState, getLocalPlaybackState, getUnsyncedPlaybackState } from '../lib/db';
-import { trackPlayStart } from '../lib/analytics';
+import { trackPlayStart, trackPlayComplete, trackRadioStart, trackFavoriteAdd } from '../lib/analytics';
 import { savePlaybackState, loadPlaybackState, clearPlaybackState, getEpisodesBySeries, getDeviceId } from '../lib/appwrite';
 import type { CurrentTrack, PlayerState, RepeatMode, QueueItem } from '../types';
 
@@ -366,6 +366,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     
     if (track) {
       updatePlaybackProgress(track.id, duration, duration, true);
+      if (track.type === 'episode' || track.type === 'radio') {
+        trackPlayComplete(track.id, track.type, track.title, duration);
+      }
     }
 
     try {
@@ -440,6 +443,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       
       if (track.type === 'episode' || track.type === 'radio') {
         trackPlayStart(track.id, track.type, track.title);
+        if (track.type === 'radio') {
+          trackRadioStart(track.id, track.title);
+        }
       }
 
       // Save to cloud immediately when starting playback
@@ -591,6 +597,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           imageUrl: currentTrack.artworkUrl,
           addedAt: new Date(),
         });
+        trackFavoriteAdd(currentTrack.id, currentTrack.type, currentTrack.title);
         setIsFavoriteTrack(true);
       }
     }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Play, Search, Heart, Sparkles } from 'lucide-react';
 import { getAllDuas, isAppwriteConfigured } from '../lib/appwrite';
+import { trackDuaView } from '../lib/analytics';
 import type { Dua, DuaCategory, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { cn } from '../lib/utils';
@@ -329,7 +330,12 @@ export function Duas() {
 
                   {/* Expand Toggle */}
                   <button
-                    onClick={() => setExpandedDua(expandedDua === dua.$id ? null : dua.$id)}
+                    onClick={() => {
+                      if (expandedDua !== dua.$id) {
+                        trackDuaView(dua.$id, dua.title);
+                      }
+                      setExpandedDua(expandedDua === dua.$id ? null : dua.$id);
+                    }}
                     className="mt-3 text-xs text-primary hover:text-primary-light transition-colors"
                   >
                     {expandedDua === dua.$id ? 'Show less' : 'Read translation'}
