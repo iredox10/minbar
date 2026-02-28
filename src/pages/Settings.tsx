@@ -22,7 +22,7 @@ const item = {
 };
 
 const defaultSettings: AppSettings = {
-  theme: 'system',
+  theme: 'dark',
   playbackSpeed: 1,
   downloadWifiOnly: true,
   autoDownload: false
@@ -45,7 +45,8 @@ export function Settings() {
 
   const handleThemeChange = async (theme: 'light' | 'dark' | 'system') => {
     await updateSettings({ theme });
-    
+    localStorage.setItem('arewa-theme', theme);
+
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else if (theme === 'light') {

@@ -5,6 +5,21 @@ import { AdminProvider } from './context/AdminContext';
 import { useAdmin } from './context/AdminContext';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
+import { getSettings } from './lib/db';
+
+// Apply saved theme before first paint (async DB read reconciles after inline script)
+getSettings().then(s => {
+  const theme = s?.theme ?? 'dark';
+  localStorage.setItem('arewa-theme', theme);
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (theme === 'light') {
+    document.documentElement.classList.remove('dark');
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.classList.toggle('dark', prefersDark);
+  }
+});
 
 // Lazy load all pages for code splitting
 const Layout = lazy(() => import('./components/layout/Layout').then(m => ({ default: m.Layout })));

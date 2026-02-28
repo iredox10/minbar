@@ -25,6 +25,81 @@
   --font-arabic: 'Amiri', 'Traditional Arabic', serif;
 }
 
+/* ============================================================
+   THEME TOKENS — light mode defaults, overridden by html.dark
+   ============================================================ */
+:root {
+  /* Surfaces */
+  --bg-base:          #f1f5f9;
+  --bg-base-2:        #e2e8f0;
+  --bg-card:          rgba(255, 255, 255, 0.85);
+  --bg-card-hover:    rgba(255, 255, 255, 0.95);
+  --bg-card-dark:     rgba(255, 255, 255, 0.9);
+  --bg-input:         rgba(241, 245, 249, 0.8);
+  --bg-overlay:       rgba(255, 255, 255, 0.95);
+
+  /* Borders */
+  --border-default:   rgba(100, 116, 139, 0.2);
+  --border-hover:     rgba(212, 168, 83, 0.4);
+
+  /* Text */
+  --text-primary:     #0f172a;
+  --text-secondary:   #334155;
+  --text-muted:       #64748b;
+  --text-subtle:      #94a3b8;
+
+  /* Body background gradient */
+  --body-bg-from:     #e2e8f0;
+  --body-bg-mid:      #dde6f0;
+  --body-bg-to:       #e2e8f0;
+
+  /* Shadows */
+  --shadow-card:      0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-card-hover:0 10px 15px -3px rgba(15, 23, 42, 0.12), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+
+  /* Skeleton shimmer */
+  --skeleton-from:    rgba(203, 213, 225, 0.8);
+  --skeleton-mid:     rgba(226, 232, 240, 0.9);
+  --skeleton-to:      rgba(203, 213, 225, 0.8);
+
+  /* Scrollbar */
+  --scrollbar-track:  rgba(203, 213, 225, 0.5);
+}
+
+html.dark {
+  --bg-base:          #0f172a;
+  --bg-base-2:        #1e293b;
+  --bg-card:          linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+  --bg-card-hover:    rgba(30, 41, 59, 0.9);
+  --bg-card-dark:     linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%);
+  --bg-input:         rgba(30, 41, 59, 0.5);
+  --bg-overlay:       rgba(15, 23, 42, 0.97);
+
+  --border-default:   rgba(148, 163, 184, 0.1);
+  --border-hover:     rgba(212, 168, 83, 0.3);
+
+  --text-primary:     #f1f5f9;
+  --text-secondary:   #cbd5e1;
+  --text-muted:       #64748b;
+  --text-subtle:      #475569;
+
+  --body-bg-from:     #0f172a;
+  --body-bg-mid:      #1e1b4b;
+  --body-bg-to:       #0f172a;
+
+  --shadow-card:      0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover:0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+
+  --skeleton-from:    rgba(30, 41, 59, 0.8);
+  --skeleton-mid:     rgba(51, 65, 85, 0.8);
+  --skeleton-to:      rgba(30, 41, 59, 0.8);
+
+  --scrollbar-track:  rgba(30, 41, 59, 0.5);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
 * {
   box-sizing: border-box;
 }
@@ -39,11 +114,12 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, var(--body-bg-from) 0%, var(--body-bg-mid) 50%, var(--body-bg-to) 100%);
   background-attachment: fixed;
-  color: var(--color-slate-100);
+  color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 body::before {
@@ -54,9 +130,9 @@ body::before {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 20%, rgba(212, 168, 83, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 70%);
+    radial-gradient(circle at 20% 20%, rgba(212, 168, 83, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.02) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -67,43 +143,55 @@ body::before {
   z-index: 1;
 }
 
-.font-arabic {
-  font-family: var(--font-arabic);
-  line-height: 2.2;
-}
-
+/* ============================================================
+   GLASS CARD
+   ============================================================ */
 .glass-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   backdrop-filter: blur(20px);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 2px 4px -2px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Light mode: use a solid white card instead of gradient string */
+:root:not(.dark) .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+html.dark .glass-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+}
+
 .glass-card:hover {
-  border-color: rgba(212, 168, 83, 0.3);
-  box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.4),
-    0 4px 6px -4px rgba(0, 0, 0, 0.3),
-    0 0 20px -5px rgba(212, 168, 83, 0.2),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-card-hover), 0 0 20px -5px rgba(212, 168, 83, 0.15);
   transform: translateY(-2px);
 }
 
 .glass-card-dark {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%);
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border-default);
   backdrop-filter: blur(20px);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.primary-glow {
-  box-shadow: 0 0 30px rgba(212, 168, 83, 0.4), 0 0 60px rgba(212, 168, 83, 0.2);
+:root:not(.dark) .glass-card-dark {
+  background: rgba(248, 250, 252, 0.9);
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+}
+
+html.dark .glass-card-dark {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   TYPOGRAPHY HELPERS
+   ============================================================ */
+.font-arabic {
+  font-family: var(--font-arabic);
+  line-height: 2.2;
 }
 
 .text-gradient {
@@ -113,139 +201,38 @@ body::before {
   background-clip: text;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #d4a853 0%, #b8943f 100%);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #e8c070 0%, #d4a853 100%);
-}
-
-@keyframes pulse-gold {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 0 12px rgba(212, 168, 83, 0);
-  }
-}
-
-.animate-pulse-gold {
-  animation: pulse-gold 2s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
+/* ============================================================
+   SKELETON LOADER
+   ============================================================ */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(212, 168, 83, 0.1) 50%, transparent 100%);
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-from) 0%,
+    var(--skeleton-mid) 50%,
+    var(--skeleton-to) 100%
+  );
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+  animation: shimmer 1.5s infinite;
 }
 
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #d4a853 0%, #b8943f 100%); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #e8c070 0%, #d4a853 100%); }
 
-.animate-slide-up {
-  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out;
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 20s linear infinite;
-}
-
-@keyframes audio-wave {
-  0%, 100% {
-    height: 20%;
-  }
-  50% {
-    height: 100%;
-  }
-}
-
-.audio-wave-bar {
-  animation: audio-wave 1s ease-in-out infinite;
-}
-
-.islamic-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a853' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+/* ============================================================
+   GLOW / EFFECTS
+   ============================================================ */
+.primary-glow {
+  box-shadow: 0 0 30px rgba(212, 168, 83, 0.4), 0 0 60px rgba(212, 168, 83, 0.2);
 }
 
 .geometric-border {
@@ -266,12 +253,64 @@ body::before {
   pointer-events: none;
 }
 
-.skeleton {
-  background: linear-gradient(90deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 50%, rgba(30, 41, 59, 0.8) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.islamic-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a853' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.5); }
+  50%       { box-shadow: 0 0 0 12px rgba(212, 168, 83, 0); }
+}
+.animate-pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 168, 83, 0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scale-in 0.2s ease-out; }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+@keyframes audio-wave {
+  0%, 100% { height: 20%; }
+  50%       { height: 100%; }
+}
+.audio-wave-bar { animation: audio-wave 1s ease-in-out infinite; }
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -290,7 +329,44 @@ body::before {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+/* ============================================================
+   LIGHT MODE OVERRIDES FOR HARDCODED DARK TAILWIND CLASSES
+   These make slate-800/900 bg classes look right in light mode
+   without touching every component's JSX.
+   ============================================================ */
+:root:not(.dark) {
+  /* Sticky headers / nav bars that use bg-slate-900/95 */
+  .bg-slate-900\/95,
+  .bg-slate-900 {
+    background-color: rgba(248, 250, 252, 0.97) !important;
+  }
+
+  /* Cards / sections that use bg-slate-800/30, bg-slate-800/50 */
+  .bg-slate-800\/30 { background-color: rgba(241, 245, 249, 0.6) !important; }
+  .bg-slate-800\/50 { background-color: rgba(226, 232, 240, 0.7) !important; }
+  .bg-slate-800     { background-color: #e2e8f0 !important; }
+
+  /* Input fields */
+  .border-slate-700\/50 { border-color: rgba(148, 163, 184, 0.4) !important; }
+  .border-slate-800\/50 { border-color: rgba(148, 163, 184, 0.3) !important; }
+
+  /* Text colours */
+  .text-slate-100 { color: #0f172a !important; }
+  .text-slate-200 { color: #1e293b !important; }
+  .text-slate-300 { color: #334155 !important; }
+  .text-slate-400 { color: #64748b !important; }
+  .text-slate-500 { color: #94a3b8 !important; }
+
+  /* Dividers */
+  .divide-slate-800 > * + * { border-color: rgba(148, 163, 184, 0.2) !important; }
+  .border-slate-800\/50      { border-color: rgba(148, 163, 184, 0.25) !important; }
+
+  /* Bottom nav / player panels */
+  .bg-slate-900\/80 { background-color: rgba(248, 250, 252, 0.92) !important; }
+
+  /* Misc dark overlays used for gradients on cards */
+  .from-slate-900  { --tw-gradient-from: #f8fafc !important; }
+  .via-slate-900\/40 { --tw-gradient-via: rgba(248, 250, 252, 0.4) !important; }
 }

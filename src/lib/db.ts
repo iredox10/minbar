@@ -141,7 +141,7 @@ export async function getOrCreateSettings(): Promise<AppSettings> {
   if (settings) return settings;
   
   const defaultSettings: Omit<AppSettings, 'id'> = {
-    theme: 'system',
+    theme: 'dark',
     playbackSpeed: 1,
     downloadWifiOnly: true,
     autoDownload: false
@@ -156,7 +156,7 @@ export async function updateSettings(updates: Partial<AppSettings>): Promise<voi
     await db.settings.update(settings.id, updates);
   } else {
     await db.settings.add({ 
-      theme: 'system',
+      theme: 'dark',
       playbackSpeed: 1,
       downloadWifiOnly: true,
       autoDownload: false,

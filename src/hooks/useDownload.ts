@@ -12,6 +12,7 @@ import {
   getDownload,
   saveDownload,
   deleteDownload,
+  getSettings,
 } from '../lib/db';
 import { trackDownload } from '../lib/analytics';
 import type { DownloadedEpisode } from '../types';
@@ -65,6 +66,18 @@ export function useDownload(
 
   const startDownload = useCallback(async () => {
     if (status === 'downloading' || status === 'done') return;
+
+    // Respect the Wi-Fi only setting
+    const appSettings = await getSettings();
+    const wifiOnly = appSettings?.downloadWifiOnly ?? true;
+    if (wifiOnly) {
+      const conn = (navigator as Navigator & { connection?: { type?: string } }).connection;
+      if (conn?.type && conn.type !== 'wifi' && conn.type !== 'ethernet' && conn.type !== 'none') {
+        setErrorMessage('Wi-Fi only mode is enabled. Connect to Wi-Fi to download.');
+        setStatus('error');
+        return;
+      }
+    }
 
     setStatus('downloading');
     setProgress(0);
