@@ -490,7 +490,7 @@ export function PlayerPage() {
           >
             {currentTrack.title}
           </motion.h2>
-          <p className="text-sm text-slate-400">{currentTrack.speaker || 'Muslim Central'}</p>
+          <p className="text-sm text-slate-400">{currentTrack.speaker || 'Arewa Central'}</p>
 
           <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
             {playbackSpeed !== 1 && (

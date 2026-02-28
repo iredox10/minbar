@@ -57,7 +57,7 @@ class AudioManager {
     if ('mediaSession' in navigator && this.currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: this.currentTrack.title,
-        artist: this.currentTrack.speaker || 'Muslim Central',
+        artist: this.currentTrack.speaker || 'Arewa Central',
         artwork: this.currentTrack.artworkUrl
           ? [{ src: this.currentTrack.artworkUrl, sizes: '512x512', type: 'image/png' }]
           : []

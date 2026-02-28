@@ -311,7 +311,7 @@ export function MiniPlayer() {
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <span className="text-xs text-slate-400 truncate max-w-[120px]">
-                    {currentTrack.speaker || 'Muslim Central'}
+                    {currentTrack.speaker || 'Arewa Central'}
                   </span>
                   <span className="text-[10px] text-slate-600">·</span>
                   <span className="text-[10px] text-primary font-mono tabular-nums">

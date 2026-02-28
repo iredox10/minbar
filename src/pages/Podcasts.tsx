@@ -88,7 +88,7 @@ export function Podcasts() {
               <span className="text-sm text-primary font-medium">Free. No Ads. Your Daily Companion.</span>
             </div>
             <h1 className="text-4xl font-bold mb-2">
-              <span className="text-slate-100">Muslim</span>{' '}
+              <span className="text-slate-100">Arewa</span>{' '}
               <span className="text-gradient">Central</span>
             </h1>
             <p className="text-slate-400 text-lg">Discover knowledge, inspiration & guidance</p>

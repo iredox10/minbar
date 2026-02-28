@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Muslim Central',
-        short_name: 'MuslimCentral',
+        name: 'Arewa Central',
+        short_name: 'ArewaCentral',
         description: 'Audio Podcasts and more. Free. No Ads. Your Daily Muslim Companion.',
         theme_color: '#0f172a',
         background_color: '#0f172a',

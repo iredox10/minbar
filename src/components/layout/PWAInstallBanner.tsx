@@ -56,7 +56,7 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <h3 className="font-semibold text-slate-100">Add to Home Screen</h3>
-            <p className="text-xs text-slate-400">Install Muslim Central as an app</p>
+            <p className="text-xs text-slate-400">Install Arewa Central as an app</p>
           </div>
         </div>
 
@@ -165,7 +165,7 @@ export function PWAInstallBanner() {
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-100 leading-tight">
-                    Install Muslim Central
+                    Install Arewa Central
                   </p>
                   <p className="text-xs text-slate-400 truncate">
                     Free Islamic Podcasts &amp; Duas — No Ads

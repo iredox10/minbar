@@ -271,7 +271,7 @@ export function Settings() {
                 <span className="text-primary font-bold text-xl">MC</span>
               </div>
               <div>
-                <p className="font-bold text-slate-100 text-lg">Muslim Central</p>
+                <p className="font-bold text-slate-100 text-lg">Arewa Central</p>
                 <p className="text-xs text-slate-500">Version 1.0.0</p>
               </div>
             </div>
@@ -282,7 +282,7 @@ export function Settings() {
                 <span className="text-sm font-medium">Free. No Ads. No Tracking.</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Your daily Muslim companion for audio podcasts, lectures, duas, and more. 
+                Your daily companion for audio podcasts, lectures, duas, and more. 
                 Designed to help you stay connected with beneficial knowledge.
               </p>
             </div>

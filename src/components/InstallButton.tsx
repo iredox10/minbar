@@ -42,7 +42,7 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h3 className="font-semibold text-slate-100">Add to Home Screen</h3>
-              <p className="text-xs text-slate-400">Install Muslim Central as an app</p>
+              <p className="text-xs text-slate-400">Install Arewa Central as an app</p>
             </div>
           </div>
 

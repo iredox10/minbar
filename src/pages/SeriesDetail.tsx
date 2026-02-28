@@ -132,7 +132,7 @@ export function SeriesDetail() {
     if (!series) return;
     const shareData = {
       title: series.title,
-      text: `Check out "${series.title}" on Muslim Central`,
+      text: `Check out "${series.title}" on Arewa Central`,
       url: window.location.href
     };
     try {

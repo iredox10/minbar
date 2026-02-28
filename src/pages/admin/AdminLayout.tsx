@@ -63,7 +63,7 @@ export function AdminLayout() {
                   exit={{ opacity: 0, width: 0 }}
                   className="overflow-hidden"
                 >
-                  <p className="font-bold text-slate-100 whitespace-nowrap">Muslim Central</p>
+                  <p className="font-bold text-slate-100 whitespace-nowrap">Arewa Central</p>
                   <p className="text-xs text-slate-500">Admin Panel</p>
                 </motion.div>
               )}

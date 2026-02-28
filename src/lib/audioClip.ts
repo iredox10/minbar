@@ -169,7 +169,7 @@ export function buildShareCaption(opts: {
   lines.push('');
   lines.push(`🕐 Clip from ${timestamp} (${Math.round(durationSec)}s)`);
   lines.push('');
-  lines.push(`🔗 Listen free on Muslim Central:`);
+  lines.push(`🔗 Listen free on Arewa Central:`);
   lines.push(appUrl);
   lines.push('');
   lines.push('Free Islamic Podcasts, Duas & more.');
