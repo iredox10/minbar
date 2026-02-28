@@ -309,6 +309,25 @@ html.dark .glass-card-dark {
 .audio-wave-bar { animation: audio-wave 1s ease-in-out infinite; }
 
 /* ============================================================
+   PLAYER PAGE — theme-aware overlay gradient
+   ============================================================ */
+.player-bg-overlay {
+  background: linear-gradient(to bottom,
+    rgba(15, 23, 42, 0.7) 0%,
+    rgba(15, 23, 42, 0.85) 50%,
+    rgba(15, 23, 42, 1) 100%
+  );
+}
+
+:root:not(.dark) .player-bg-overlay {
+  background: linear-gradient(to bottom,
+    rgba(241, 245, 249, 0.75) 0%,
+    rgba(241, 245, 249, 0.88) 50%,
+    rgba(241, 245, 249, 1) 100%
+  ) !important;
+}
+
+/* ============================================================
    UTILITIES
    ============================================================ */
 .line-clamp-2 {
@@ -337,20 +356,36 @@ html.dark .glass-card-dark {
    without touching every component's JSX.
    ============================================================ */
 :root:not(.dark) {
-  /* Sticky headers / nav bars that use bg-slate-900/95 */
+  /* Sticky headers / nav bars */
   .bg-slate-900\/95,
   .bg-slate-900 {
     background-color: rgba(248, 250, 252, 0.97) !important;
   }
 
-  /* Cards / sections that use bg-slate-800/30, bg-slate-800/50 */
+  /* Semi-transparent slate-900 variants (player overlays, etc.) */
+  .bg-slate-900\/80 { background-color: rgba(248, 250, 252, 0.92) !important; }
+  .bg-slate-900\/70 { background-color: rgba(248, 250, 252, 0.85) !important; }
+  .bg-slate-900\/60 { background-color: rgba(248, 250, 252, 0.78) !important; }
+  .bg-slate-900\/85 { background-color: rgba(248, 250, 252, 0.9)  !important; }
+
+  /* Cards / sections */
   .bg-slate-800\/30 { background-color: rgba(241, 245, 249, 0.6) !important; }
   .bg-slate-800\/50 { background-color: rgba(226, 232, 240, 0.7) !important; }
+  .bg-slate-800\/60 { background-color: rgba(226, 232, 240, 0.75) !important; }
+  .bg-slate-800\/70 { background-color: rgba(226, 232, 240, 0.8) !important; }
   .bg-slate-800     { background-color: #e2e8f0 !important; }
 
-  /* Input fields */
-  .border-slate-700\/50 { border-color: rgba(148, 163, 184, 0.4) !important; }
-  .border-slate-800\/50 { border-color: rgba(148, 163, 184, 0.3) !important; }
+  /* Darker button / hover targets */
+  .bg-slate-700     { background-color: #cbd5e1 !important; }
+  .hover\:bg-slate-700:hover { background-color: #cbd5e1 !important; }
+
+  /* Sheet backdrops */
+  .bg-black\/50  { background-color: rgba(15, 23, 42, 0.35) !important; }
+
+  /* Input fields / borders */
+  .border-slate-700\/50 { border-color: rgba(148, 163, 184, 0.4)  !important; }
+  .border-slate-700\/60 { border-color: rgba(148, 163, 184, 0.45) !important; }
+  .border-slate-800\/50 { border-color: rgba(148, 163, 184, 0.3)  !important; }
 
   /* Text colours */
   .text-slate-100 { color: #0f172a !important; }
@@ -359,14 +394,19 @@ html.dark .glass-card-dark {
   .text-slate-400 { color: #64748b !important; }
   .text-slate-500 { color: #94a3b8 !important; }
 
+  /* Hover text */
+  .hover\:text-white:hover  { color: #0f172a !important; }
+  .hover\:text-slate-300:hover { color: #334155 !important; }
+  .hover\:text-slate-200:hover { color: #1e293b !important; }
+
   /* Dividers */
   .divide-slate-800 > * + * { border-color: rgba(148, 163, 184, 0.2) !important; }
   .border-slate-800\/50      { border-color: rgba(148, 163, 184, 0.25) !important; }
 
-  /* Bottom nav / player panels */
-  .bg-slate-900\/80 { background-color: rgba(248, 250, 252, 0.92) !important; }
-
-  /* Misc dark overlays used for gradients on cards */
-  .from-slate-900  { --tw-gradient-from: #f8fafc !important; }
-  .via-slate-900\/40 { --tw-gradient-via: rgba(248, 250, 252, 0.4) !important; }
+  /* Gradient stops (hero background overlay in PlayerPage) */
+  .from-slate-900    { --tw-gradient-from: rgba(248, 250, 252, 0.85) !important; }
+  .via-slate-900\/85 { --tw-gradient-via:  rgba(248, 250, 252, 0.7)  !important; }
+  .via-slate-900\/80 { --tw-gradient-via:  rgba(248, 250, 252, 0.65) !important; }
+  .via-slate-900\/40 { --tw-gradient-via:  rgba(248, 250, 252, 0.4)  !important; }
+  .to-slate-900      { --tw-gradient-to:   #f8fafc                   !important; }
 }

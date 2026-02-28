@@ -515,7 +515,7 @@ export function PlayerPage() {
             aria-hidden
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/85 to-slate-900" />
+        <div className="absolute inset-0 player-bg-overlay" />
       </div>
 
       {/* ── Scrollable content ── */}
