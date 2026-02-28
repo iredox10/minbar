@@ -267,8 +267,8 @@ export function Settings() {
           
           <div className="glass-card rounded-2xl p-5">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/30 to-violet-500/30 flex items-center justify-center">
-                <span className="text-primary font-bold text-xl">MC</span>
+              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-primary/20">
+                <img src="/logo.svg" alt="Arewa Central" className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="font-bold text-slate-100 text-lg">Arewa Central</p>

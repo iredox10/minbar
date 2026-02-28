@@ -87,10 +87,13 @@ export function Podcasts() {
               <Sparkles size={16} className="text-primary" />
               <span className="text-sm text-primary font-medium">Free. No Ads. Your Daily Companion.</span>
             </div>
-            <h1 className="text-4xl font-bold mb-2">
-              <span className="text-slate-100">Arewa</span>{' '}
-              <span className="text-gradient">Central</span>
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <img src="/logo.svg" alt="Arewa Central" className="w-12 h-12 rounded-2xl shadow-lg shadow-primary/20" />
+              <h1 className="text-4xl font-bold">
+                <span className="text-slate-100">Arewa</span>{' '}
+                <span className="text-gradient">Central</span>
+              </h1>
+            </div>
             <p className="text-slate-400 text-lg">Discover knowledge, inspiration & guidance</p>
           </motion.div>
 
