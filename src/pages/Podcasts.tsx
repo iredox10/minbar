@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Search, Play, Clock, User, Sparkles, TrendingUp } from 'lucide-react';
+import { ChevronRight, Search, Play, Clock, User, Sparkles, TrendingUp, PlayCircle } from 'lucide-react';
 import { getFeaturedSpeakers, getLatestEpisodes, getFeaturedSeries, isAppwriteConfigured } from '../lib/appwrite';
-import type { Speaker, Episode, Series, CurrentTrack } from '../types';
+import { getInProgressHistory } from '../lib/db';
+import type { Speaker, Episode, Series, CurrentTrack, PlaybackHistory } from '../types';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 
@@ -21,15 +22,20 @@ const item = {
 };
 
 export function Podcasts() {
+  const navigate = useNavigate();
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [latestEpisodes, setLatestEpisodes] = useState<Episode[]>([]);
   const [featuredSeries, setFeaturedSeries] = useState<Series[]>([]);
+  const [inProgress, setInProgress] = useState<PlaybackHistory[]>([]);
   const [loading, setLoading] = useState(true);
   
   const { play, currentTrack, playerState } = useAudio();
 
   useEffect(() => {
     async function loadData() {
+      // Load in-progress history (offline-first, no Appwrite needed)
+      getInProgressHistory(8).then(setInProgress);
+
       if (!isAppwriteConfigured()) {
         setLoading(false);
         return;
@@ -65,6 +71,21 @@ export function Podcasts() {
       type: 'episode'
     };
     play(track);
+  };
+
+  const handleResume = (h: PlaybackHistory) => {
+    if (!h.audioUrl) return;
+    const track: CurrentTrack = {
+      id: h.episodeId,
+      title: h.title ?? 'Episode',
+      audioUrl: h.audioUrl,
+      artworkUrl: h.artworkUrl,
+      speaker: h.speaker,
+      duration: h.duration,
+      type: 'episode',
+    };
+    play(track, h.position);
+    navigate('/player');
   };
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
@@ -141,6 +162,76 @@ export function Podcasts() {
         </div>
       ) : (
         <div className="px-4 space-y-10 pb-24">
+          {/* Continue Listening */}
+          {inProgress.length > 0 && (
+            <motion.section
+              variants={container}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-6 bg-violet-400 rounded-full" />
+                  <h2 className="text-xl font-bold text-slate-100">Continue Listening</h2>
+                </div>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+                {inProgress.map((h) => {
+                  const progress = h.duration > 0 ? (h.position / h.duration) * 100 : 0;
+                  const isCurrentlyPlaying = currentTrack?.id === h.episodeId && playerState === 'playing';
+                  return (
+                    <motion.div
+                      key={h.id}
+                      variants={item}
+                      whileHover={{ y: -4 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex-shrink-0 w-36 cursor-pointer"
+                      onClick={() => handleResume(h)}
+                    >
+                      <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-800 mb-2">
+                        {h.artworkUrl ? (
+                          <img src={h.artworkUrl} alt={h.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/30 to-violet-500/30 flex items-center justify-center">
+                            <PlayCircle size={28} className="text-primary/60" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-1.5 right-1.5 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                          {isCurrentlyPlaying ? (
+                            <div className="flex items-end gap-[2px] h-3.5">
+                              {[0,1,2].map(i => (
+                                <span key={i} className="w-[2px] bg-slate-900 rounded-full audio-wave-bar" style={{ animationDelay: `${i * 150}ms` }} />
+                              ))}
+                            </div>
+                          ) : (
+                            <Play size={14} className="text-slate-900 ml-0.5" />
+                          )}
+                        </div>
+                        {/* Progress bar */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                          <div
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-200 font-medium line-clamp-2 leading-snug">
+                        {h.title ?? 'Episode'}
+                      </p>
+                      {h.speaker && (
+                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">{h.speaker}</p>
+                      )}
+                      <p className="text-[10px] text-slate-600 mt-0.5 font-mono">
+                        {formatDuration(h.position)} / {formatDuration(h.duration)}
+                      </p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.section>
+          )}
+
           {/* Featured Speakers */}
           {speakers.length > 0 && (
             <motion.section

@@ -7,11 +7,12 @@ import {
   ChevronDown, RotateCcw, RotateCw, Volume2, VolumeX, Moon,
   Repeat, Repeat1, Heart, ListPlus,
   SkipBack, SkipForward,
-  Share2, Download, CheckCircle2
+  Share2, Download, CheckCircle2,
+  ListOrdered, Trash2, Bookmark,
 } from 'lucide-react';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
-import { getPlaylists, addToPlaylist } from '../lib/db';
-import type { Playlist } from '../types';
+import { getPlaylists, addToPlaylist, addBookmark } from '../lib/db';
+import type { Playlist, QueueItem } from '../types';
 import { ShareSheet } from '../components/audio/ShareSheet';
 import { DownloadSheet } from '../components/audio/DownloadSheet';
 import { useDownload } from '../hooks/useDownload';
@@ -407,6 +408,110 @@ function VolumeSlider({ volume, isMuted, setVolume, toggleMute }: { volume: numb
 }
 
 /* ─────────────────────────────────────────────
+   Up Next sheet
+───────────────────────────────────────────── */
+function UpNextSheet({
+  queue,
+  currentIndex,
+  onJump,
+  onRemove,
+  onClose,
+}: {
+  queue: QueueItem[];
+  currentIndex: number;
+  onJump: (index: number) => void;
+  onRemove: (index: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      key="upnext-sheet"
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+      className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700/60 rounded-t-3xl z-20 flex flex-col max-h-[70vh]"
+    >
+      <div className="p-6 pb-3">
+        <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-5" />
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+            <ListOrdered size={18} className="text-primary" />
+            Up Next
+            <span className="text-xs text-slate-500 font-normal ml-1">({queue.length} tracks)</span>
+          </h3>
+          <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+      {queue.length === 0 ? (
+        <p className="text-slate-400 text-center py-6 text-sm px-6">Queue is empty.</p>
+      ) : (
+        <div className="overflow-y-auto pb-6 px-4 space-y-1.5">
+          {queue.map((track, idx) => {
+            const isCurrent = idx === currentIndex;
+            return (
+              <motion.div
+                key={`${track.id}-${idx}`}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className={cn(
+                  'flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer group',
+                  isCurrent
+                    ? 'bg-primary/15 ring-1 ring-primary/30'
+                    : 'hover:bg-slate-800/70'
+                )}
+                onClick={() => !isCurrent && onJump(idx)}
+              >
+                {/* Artwork */}
+                <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden bg-slate-800 relative">
+                  {track.artworkUrl ? (
+                    <img src={track.artworkUrl} alt={track.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-violet-500/20">
+                      <Music2 size={14} className="text-primary/50" />
+                    </div>
+                  )}
+                  {isCurrent && (
+                    <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
+                      <div className="flex items-end gap-[2px] h-3">
+                        {[0, 1, 2].map(i => (
+                          <span key={i} className="w-[2px] bg-primary rounded-full audio-wave-bar" style={{ animationDelay: `${i * 150}ms` }} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm font-medium truncate', isCurrent ? 'text-primary' : 'text-slate-200')}>
+                    {track.title}
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{formatDuration(track.duration)}</p>
+                </div>
+                {/* Remove button (not for currently playing) */}
+                {!isCurrent && (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { e.stopPropagation(); onRemove(idx); }}
+                    className="p-1.5 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    Main PlayerPage
 ───────────────────────────────────────────── */
 export function PlayerPage() {
@@ -424,6 +529,8 @@ export function PlayerPage() {
     hasNext,
     hasPrevious,
     isFavoriteTrack,
+    queue,
+    currentIndex,
     togglePlayPause,
     seek,
     seekRelative,
@@ -438,9 +545,11 @@ export function PlayerPage() {
     playPrevious,
     toggleFavorite,
     play,
+    removeFromQueue,
+    jumpToQueueIndex,
   } = useAudio();
 
-  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | 'share' | 'download' | null>(null);
+  const [sheet, setSheet] = useState<'speed' | 'sleep' | 'playlist' | 'share' | 'download' | 'upnext' | 'bookmark' | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [showVolume, setShowVolume] = useState(false);
 
@@ -469,6 +578,20 @@ export function PlayerPage() {
       await addToPlaylist(playlistId, currentTrack.id);
       setSheet(null);
     }
+  };
+
+  const handleAddBookmark = async () => {
+    if (!currentTrack) return;
+    await addBookmark({
+      episodeId: currentTrack.id,
+      episodeTitle: currentTrack.title,
+      speakerName: currentTrack.speaker,
+      artworkUrl: currentTrack.artworkUrl,
+      audioUrl: currentTrack.audioUrl,
+      position,
+      createdAt: new Date(),
+    });
+    setSheet(null);
   };
 
   const handlePlayResume = () => {
@@ -637,6 +760,21 @@ export function PlayerPage() {
             )}
           >
             {dlStatus === 'done' ? <CheckCircle2 size={22} /> : <Download size={22} />}
+          </motion.button>
+
+          {/* Bookmark */}
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => !isRadio && handleAddBookmark()}
+            disabled={isRadio}
+            aria-label="Bookmark position"
+            className={cn(
+              'p-2.5 rounded-full transition-all',
+              isRadio ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500 hover:text-primary'
+            )}
+          >
+            <Bookmark size={22} />
           </motion.button>
 
           {/* Share */}
@@ -809,6 +947,23 @@ export function PlayerPage() {
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             <span className="text-[10px]">{isMuted ? 'Muted' : 'Vol'}</span>
           </motion.button>
+
+          {/* Up Next */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => openSheet('upnext')}
+            aria-label="Up next queue"
+            className={cn(
+              'px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition-all',
+              sheet === 'upnext'
+                ? 'bg-primary/20 text-primary ring-1 ring-primary/40'
+                : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+            )}
+          >
+            <ListOrdered size={14} />
+            <span>{queue.length > 0 ? queue.length : 'Queue'}</span>
+          </motion.button>
         </div>
 
         {/* Inline volume slider */}
@@ -844,6 +999,15 @@ export function PlayerPage() {
             )}
             {sheet === 'download' && currentTrack && (
               <DownloadSheet track={currentTrack} onClose={() => setSheet(null)} />
+            )}
+            {sheet === 'upnext' && (
+              <UpNextSheet
+                queue={queue}
+                currentIndex={currentIndex}
+                onJump={jumpToQueueIndex}
+                onRemove={removeFromQueue}
+                onClose={() => setSheet(null)}
+              />
             )}
           </>
         )}

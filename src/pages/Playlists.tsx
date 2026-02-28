@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListMusic, Plus, MoreVertical, Trash2, Edit, Play, X, Check } from 'lucide-react';
-import { getPlaylists, createPlaylist, deletePlaylist, getPlaylistItems } from '../lib/db';
-import type { Playlist } from '../types';
+import { getPlaylists, createPlaylist, deletePlaylist, getPlaylistItems, updatePlaylist } from '../lib/db';
+import { getEpisodeById } from '../lib/appwrite';
+import type { Playlist, QueueItem } from '../types';
 import { formatRelativeDate, cn } from '../lib/utils';
+import { useAudio } from '../context/AudioContext';
 
 const container = {
   hidden: { opacity: 0 },
@@ -19,12 +22,20 @@ const item = {
 };
 
 export function Playlists() {
+  const navigate = useNavigate();
+  const { setQueue, play } = useAudio();
+
   const [playlists, setPlaylists] = useState<(Playlist & { itemCount?: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
+
+  // Edit modal state
+  const [editPlaylist, setEditPlaylist] = useState<Playlist | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   useEffect(() => {
     async function loadPlaylists() {
@@ -71,6 +82,58 @@ export function Playlists() {
     setMenuOpen(null);
   };
 
+  const handlePlayAll = async (playlist: Playlist & { itemCount?: number }) => {
+    setMenuOpen(null);
+    if (!playlist.itemCount) return;
+
+    try {
+      const playlistItems = await getPlaylistItems(playlist.id!);
+      const episodes = await Promise.all(
+        playlistItems.map(pi => getEpisodeById(pi.episodeId))
+      );
+      const queueItems: QueueItem[] = episodes
+        .filter(Boolean)
+        .map(ep => ({
+          id: ep!.$id,
+          title: ep!.title,
+          audioUrl: ep!.audioUrl,
+          duration: ep!.duration,
+          type: 'episode' as const,
+          seriesId: ep!.seriesId,
+          episodeNumber: ep!.episodeNumber,
+        }));
+
+      if (queueItems.length > 0) {
+        setQueue(queueItems, 0);
+        await play(queueItems[0], 0);
+        navigate('/player');
+      }
+    } catch (error) {
+      console.error('Failed to play playlist:', error);
+    }
+  };
+
+  const handleOpenEdit = (playlist: Playlist) => {
+    setMenuOpen(null);
+    setEditPlaylist(playlist);
+    setEditName(playlist.name);
+    setEditDescription(playlist.description ?? '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editPlaylist || !editName.trim()) return;
+    await updatePlaylist(editPlaylist.id!, {
+      name: editName.trim(),
+      description: editDescription.trim() || undefined,
+    });
+    setPlaylists(prev => prev.map(p =>
+      p.id === editPlaylist.id
+        ? { ...p, name: editName.trim(), description: editDescription.trim() || undefined, updatedAt: new Date() }
+        : p
+    ));
+    setEditPlaylist(null);
+  };
+
   return (
     <div className="min-h-screen">
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50">
@@ -91,6 +154,7 @@ export function Playlists() {
         </div>
       </div>
 
+      {/* Create modal */}
       <AnimatePresence>
         {showCreate && (
           <motion.div
@@ -160,6 +224,83 @@ export function Playlists() {
                   >
                     <Check size={18} />
                     Create
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit modal */}
+      <AnimatePresence>
+        {editPlaylist && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setEditPlaylist(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md glass-card rounded-2xl p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-100">Edit Playlist</h2>
+                <button
+                  onClick={() => setEditPlaylist(null)}
+                  className="p-1 text-slate-500 hover:text-slate-300"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Name</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Description (optional)</label>
+                  <input
+                    type="text"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Add a description..."
+                    className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setEditPlaylist(null)}
+                    className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={!editName.trim()}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2",
+                      editName.trim()
+                        ? "bg-primary text-slate-900"
+                        : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                    )}
+                  >
+                    <Check size={18} />
+                    Save
                   </button>
                 </div>
               </div>
@@ -256,18 +397,14 @@ export function Playlists() {
                             className="absolute right-0 top-full mt-1 py-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-10 min-w-[120px]"
                           >
                             <button
-                              onClick={() => {
-                                setMenuOpen(null);
-                              }}
+                              onClick={() => handlePlayAll(playlist)}
                               className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
                             >
                               <Play size={14} />
                               Play All
                             </button>
                             <button
-                              onClick={() => {
-                                setMenuOpen(null);
-                              }}
+                              onClick={() => handleOpenEdit(playlist)}
                               className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
                             >
                               <Edit size={14} />

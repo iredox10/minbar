@@ -5,7 +5,8 @@ import type {
   Playlist,
   PlaylistItem,
   PlaybackHistory,
-  AppSettings
+  AppSettings,
+  Bookmark
 } from '../types';
 
 export interface SavedPlaybackState {
@@ -34,6 +35,7 @@ const db = new Dexie('MuslimCentralDB') as Dexie & {
   playbackHistory: EntityTable<PlaybackHistory, 'id'>;
   settings: EntityTable<AppSettings, 'id'>;
   playbackState: EntityTable<SavedPlaybackState, 'id'>;
+  bookmarks: EntityTable<Bookmark, 'id'>;
 };
 
 db.version(2).stores({
@@ -44,6 +46,17 @@ db.version(2).stores({
   playbackHistory: '++id, episodeId, playedAt',
   settings: '++id',
   playbackState: '++id, deviceId, updatedAt, synced'
+});
+
+db.version(3).stores({
+  downloads: '++id, episodeId, seriesId, downloadedAt',
+  favorites: '++id, [type+itemId], addedAt',
+  playlists: '++id, createdAt',
+  playlistItems: '++id, playlistId, episodeId, addedAt',
+  playbackHistory: '++id, episodeId, playedAt',
+  settings: '++id',
+  playbackState: '++id, deviceId, updatedAt, synced',
+  bookmarks: '++id, episodeId, createdAt'
 });
 
 export { db };
@@ -110,7 +123,8 @@ export async function updatePlaybackProgress(
   episodeId: string,
   position: number,
   duration: number,
-  completed: boolean = false
+  completed: boolean = false,
+  meta?: { title?: string; artworkUrl?: string; audioUrl?: string; speaker?: string }
 ): Promise<void> {
   const existing = await getPlaybackHistory(episodeId);
   const data: Omit<PlaybackHistory, 'id'> = {
@@ -118,7 +132,8 @@ export async function updatePlaybackProgress(
     position,
     duration,
     playedAt: new Date(),
-    completed
+    completed,
+    ...(meta ?? {})
   };
   
   if (existing) {
@@ -130,6 +145,17 @@ export async function updatePlaybackProgress(
 
 export async function getRecentHistory(limit: number = 20): Promise<PlaybackHistory[]> {
   return db.playbackHistory.orderBy('playedAt').reverse().limit(limit).toArray();
+}
+
+export async function getInProgressHistory(limit: number = 10): Promise<PlaybackHistory[]> {
+  const all = await db.playbackHistory.orderBy('playedAt').reverse().toArray();
+  return all
+    .filter(h => {
+      if (!h.duration || h.duration === 0) return false;
+      const ratio = h.position / h.duration;
+      return ratio >= 0.05 && ratio <= 0.95;
+    })
+    .slice(0, limit);
 }
 
 export async function getSettings(): Promise<AppSettings | undefined> {
@@ -163,6 +189,10 @@ export async function updateSettings(updates: Partial<AppSettings>): Promise<voi
       ...updates 
     } as AppSettings);
   }
+}
+
+export async function updatePlaylist(id: number, updates: { name?: string; description?: string }): Promise<void> {
+  await db.playlists.update(id, { ...updates, updatedAt: new Date() });
 }
 
 export async function createPlaylist(name: string, description?: string): Promise<number> {
@@ -229,4 +259,21 @@ export async function clearLocalPlaybackState(deviceId: string): Promise<void> {
 
 export async function getUnsyncedPlaybackState(): Promise<SavedPlaybackState | undefined> {
   return db.playbackState.where('synced').equals(0).first();
+}
+
+// ─── Bookmark helpers ─────────────────────────────────────────────────────────
+
+export async function addBookmark(bookmark: Omit<Bookmark, 'id'>): Promise<number> {
+  return db.bookmarks.add(bookmark as Bookmark) as Promise<number>;
+}
+
+export async function getBookmarks(episodeId?: string): Promise<Bookmark[]> {
+  if (episodeId) {
+    return db.bookmarks.where('episodeId').equals(episodeId).sortBy('position');
+  }
+  return db.bookmarks.orderBy('createdAt').reverse().toArray();
+}
+
+export async function deleteBookmark(id: number): Promise<void> {
+  await db.bookmarks.delete(id);
 }

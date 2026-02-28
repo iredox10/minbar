@@ -101,6 +101,23 @@ export interface PlaybackHistory {
   duration: number;
   playedAt: Date;
   completed: boolean;
+  // Enriched fields stored at write time for Continue Listening widget
+  title?: string;
+  artworkUrl?: string;
+  audioUrl?: string;
+  speaker?: string;
+}
+
+export interface Bookmark {
+  id?: number;
+  episodeId: string;
+  episodeTitle: string;
+  speakerName?: string;
+  artworkUrl?: string;
+  audioUrl: string;
+  position: number;
+  note?: string;
+  createdAt: Date;
 }
 
 export interface AppSettings {

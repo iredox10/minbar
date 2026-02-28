@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { audioManager } from '../lib/audio';
-import { updatePlaybackProgress, isFavorite, addFavorite, removeFavorite, saveLocalPlaybackState, getLocalPlaybackState, getUnsyncedPlaybackState } from '../lib/db';
+import { updatePlaybackProgress, isFavorite, addFavorite, removeFavorite, saveLocalPlaybackState, getLocalPlaybackState, getUnsyncedPlaybackState, getOrCreateSettings, updateSettings } from '../lib/db';
 import { trackPlayStart, trackPlayComplete, trackRadioStart, trackFavoriteAdd } from '../lib/analytics';
 import { savePlaybackState, loadPlaybackState, clearPlaybackState, getEpisodesBySeries, getDeviceId } from '../lib/appwrite';
 import type { CurrentTrack, PlayerState, RepeatMode, QueueItem } from '../types';
@@ -37,6 +37,8 @@ interface AudioContextType {
   toggleFavorite: () => Promise<void>;
   addToPlaylistModal: () => void;
   setQueue: (items: QueueItem[], startIndex?: number) => void;
+  removeFromQueue: (index: number) => void;
+  jumpToQueueIndex: (index: number) => Promise<void>;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -264,11 +266,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        // If no playback state has a speed, fall back to AppSettings
+        if (!finalState) {
+          const appSettings = await getOrCreateSettings();
+          if (appSettings.playbackSpeed && appSettings.playbackSpeed !== 1) {
+            setPlaybackSpeedState(appSettings.playbackSpeed);
+            audioManager.setPlaybackSpeed(appSettings.playbackSpeed);
+          }
+        }
+
         if (finalState && finalState.track) {
           setCurrentTrack(finalState.track);
           setPosition(finalState.position);
-          setPlaybackSpeedState(finalState.playbackSpeed);
-          audioManager.setPlaybackSpeed(finalState.playbackSpeed);
+          const speed = finalState.playbackSpeed ?? (await getOrCreateSettings()).playbackSpeed ?? 1;
+          setPlaybackSpeedState(speed);
+          audioManager.setPlaybackSpeed(speed);
           setPlayerState('idle');
           
           // If track has seriesId, load the series episodes into queue
@@ -365,7 +377,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const track = currentTrackRef.current;
     
     if (track) {
-      updatePlaybackProgress(track.id, duration, duration, true);
+      updatePlaybackProgress(track.id, duration, duration, true, {
+        title: track.title,
+        artworkUrl: track.artworkUrl,
+        audioUrl: track.audioUrl,
+        speaker: track.speaker,
+      });
       if (track.type === 'episode' || track.type === 'radio') {
         trackPlayComplete(track.id, track.type, track.title, duration);
       }
@@ -460,7 +477,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audioManager.pause();
     if (currentTrack) {
       const pos = audioManager.getPosition();
-      updatePlaybackProgress(currentTrack.id, pos, duration);
+      updatePlaybackProgress(currentTrack.id, pos, duration, false, {
+        title: currentTrack.title,
+        artworkUrl: currentTrack.artworkUrl,
+        audioUrl: currentTrack.audioUrl,
+        speaker: currentTrack.speaker,
+      });
       savePlaybackState(currentTrack, pos, playbackSpeedRef.current);
     }
   }, [currentTrack, duration]);
@@ -501,6 +523,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const setPlaybackSpeed = useCallback((speed: number) => {
     audioManager.setPlaybackSpeed(speed);
     setPlaybackSpeedState(speed);
+    updateSettings({ playbackSpeed: speed });
     if (currentTrackRef.current) {
       savePlaybackState(currentTrackRef.current, positionRef.current, speed);
     }
@@ -528,7 +551,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const stop = useCallback(() => {
     if (currentTrack) {
-      updatePlaybackProgress(currentTrack.id, audioManager.getPosition(), duration);
+      updatePlaybackProgress(currentTrack.id, audioManager.getPosition(), duration, false, {
+        title: currentTrack.title,
+        artworkUrl: currentTrack.artworkUrl,
+        audioUrl: currentTrack.audioUrl,
+        speaker: currentTrack.speaker,
+      });
     }
     audioManager.unload();
     setCurrentTrack(null);
@@ -613,6 +641,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setCurrentIndex(startIndex);
   }, []);
 
+  const removeFromQueue = useCallback((index: number) => {
+    setQueueState(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      // Adjust current index if needed
+      setCurrentIndex(ci => {
+        if (index < ci) return ci - 1;
+        if (index === ci) return Math.min(ci, next.length - 1);
+        return ci;
+      });
+      return next;
+    });
+  }, []);
+
+  const jumpToQueueIndex = useCallback(async (index: number) => {
+    const q = queueRef.current;
+    if (index < 0 || index >= q.length) return;
+    const track = q[index];
+    setCurrentIndex(index);
+    await play(track, 0);
+  }, [play]);
+
   return (
     <AudioContext.Provider
       value={{
@@ -647,6 +696,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         toggleFavorite,
         addToPlaylistModal,
         setQueue,
+        removeFromQueue,
+        jumpToQueueIndex,
       }}
     >
       {children}

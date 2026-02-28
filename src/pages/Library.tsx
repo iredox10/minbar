@@ -11,6 +11,7 @@ import {
   History,
   ChevronRight,
   Library as LibraryIcon,
+  Bookmark,
 } from 'lucide-react';
 
 const container = {
@@ -110,6 +111,14 @@ const PERSONAL_SECTIONS: LibrarySection[] = [
     icon: History,
     accent: 'bg-slate-500/15',
     iconColor: 'text-slate-400',
+  },
+  {
+    label: 'Bookmarks',
+    description: 'Saved positions in episodes',
+    path: '/bookmarks',
+    icon: Bookmark,
+    accent: 'bg-primary/15',
+    iconColor: 'text-primary',
   },
 ];
 
