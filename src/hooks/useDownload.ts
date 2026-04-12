@@ -29,6 +29,7 @@ export interface UseDownloadResult {
   progress: number;         // 0–100 during downloading, 100 when done
   download: DownloadedEpisode | undefined; // the stored record when done
   startDownload: () => Promise<void>;
+  cancelDownload: () => void;
   removeDownload: () => Promise<void>;
   errorMessage: string | null;
 }
@@ -99,7 +100,7 @@ export function useDownload(
 
       const contentLength = response.headers.get('Content-Length');
       const total = contentLength ? parseInt(contentLength, 10) : 0;
-      const chunks: Uint8Array<ArrayBuffer>[] = [];
+      const chunks: ArrayBuffer[] = [];
       let received = 0;
 
       const reader = response.body?.getReader();
@@ -109,8 +110,10 @@ export function useDownload(
         const { done, value } = await reader.read();
         if (done) break;
         if (abort.signal.aborted) throw new DOMException('Aborted', 'AbortError');
-        chunks.push(value);
-        received += value.byteLength;
+        if (value) {
+          chunks.push(value.buffer as ArrayBuffer);
+          received += value.byteLength;
+        }
         if (total > 0) {
           setProgress(Math.min(99, Math.round((received / total) * 95)));
         }
@@ -154,6 +157,12 @@ export function useDownload(
     }
   }, [episodeId, audioUrl, title, seriesId, speakerId, duration, status]);
 
+  const cancelDownload = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+  }, []);
+
   const removeDownload = useCallback(async () => {
     await deleteDownload(episodeId);
     setDownload(undefined);
@@ -162,5 +171,5 @@ export function useDownload(
     setErrorMessage(null);
   }, [episodeId]);
 
-  return { status, progress, download, startDownload, removeDownload, errorMessage };
+  return { status, progress, download, startDownload, cancelDownload, removeDownload, errorMessage };
 }

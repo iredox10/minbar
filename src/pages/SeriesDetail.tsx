@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Clock, Download, Heart, Share2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Play, Clock, Download, Heart, Share2 } from 'lucide-react';
 import { getSeriesById, getEpisodesBySeries, isAppwriteConfigured } from '../lib/appwrite';
 import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
 import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
+import { DownloadButton } from '../components/audio/DownloadButton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -336,7 +337,9 @@ export function SeriesDetail() {
                       </div>
                     </div>
 
-                    <ChevronRight size={16} className="text-slate-600 group-hover:text-primary transition-colors flex-shrink-0" />
+                    <div className="flex items-center justify-center flex-shrink-0 w-8">
+                      <DownloadButton episode={episode} series={series} />
+                    </div>
                   </div>
                 </motion.div>
               ))}

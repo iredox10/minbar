@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Clock, ArrowLeft, Play, ChevronRight } from 'lucide-react';
+import { Search, Clock, ArrowLeft, Play } from 'lucide-react';
 import { getLatestEpisodes, getSeriesById, isAppwriteConfigured } from '../lib/appwrite';
 import type { Episode, Series, CurrentTrack } from '../types';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
+import { DownloadButton } from '../components/audio/DownloadButton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -200,7 +201,9 @@ export function LatestEpisodes() {
                         </div>
                       </div>
                       
-                      <ChevronRight size={18} className="text-slate-600 group-hover:text-primary transition-colors flex-shrink-0" />
+                      <div className="flex items-center justify-center flex-shrink-0 w-8">
+                        <DownloadButton episode={episode} series={series} />
+                      </div>
                     </div>
                   </motion.div>
                 );
