@@ -136,7 +136,10 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
     const response = await adminDatabases.listDocuments(
       DATABASE_ID,
       ANALYTICS_COLLECTION,
-      [Query.greaterThanEqual('timestamp', startDate.toISOString())]
+      [
+        Query.greaterThanEqual('timestamp', startDate.toISOString()),
+        Query.limit(5000)
+      ]
     );
 
     const documents = response.documents;

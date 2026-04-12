@@ -35,15 +35,14 @@ export function AdminAnalytics() {
   const [days, setDays] = useState(30);
 
   useEffect(() => {
+    async function loadStats() {
+      setLoading(true);
+      const data = await getAnalyticsStats(days);
+      setStats(data);
+      setLoading(false);
+    }
     loadStats();
   }, [days]);
-
-  async function loadStats() {
-    setLoading(true);
-    const data = await getAnalyticsStats(days);
-    setStats(data);
-    setLoading(false);
-  }
 
   const statCards = [
     { label: 'Total Plays', value: stats.totalPlays, icon: Play, color: 'bg-primary', change: `Last ${days} days` },

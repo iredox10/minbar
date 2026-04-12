@@ -94,93 +94,45 @@ export default async function ({ req, res, log, error }) {
     }
 
     if (action === 'download') {
-      log(`Downloading audio using Cobalt API for: ${videoId}`);
+      log(`Downloading audio using ytdl-core for: ${videoId}`);
       
-      // Use Cobalt API to get the download link
-      const cobaltResponse = await fetch(`${COBALT_API}/api/json`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url: url,
-          audioBitrate: '128',
-          audioFormat: 'mp3',
-          downloadMode: 'audio',
-          quality: '720'
-        })
-      });
+      const ytdl = (await import('@distube/ytdl-core')).default;
       
-      if (!cobaltResponse.ok) {
-        const cobaltError = await cobaltResponse.text();
-        error(`Cobalt API error: ${cobaltError}`);
-        return res.json({ 
-          error: 'Failed to get download link from Cobalt API',
-          details: cobaltError
-        }, 500);
+      const info = await ytdl.getInfo(url);
+      const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+      
+      if (!format) {
+        return res.json({ error: 'No suitable audio format found on YouTube' }, 400);
       }
       
-      const cobaltData = await cobaltResponse.json();
-      log(`Cobalt response: ${JSON.stringify(cobaltData)}`);
+      const stream = ytdl.downloadFromInfo(info, { format });
+      const chunks = [];
       
-      if (cobaltData.status === 'error') {
-        return res.json({ 
-          error: cobaltData.error?.code || 'Cobalt API error',
-          details: cobaltData.error?.context || 'Unknown error'
-        }, 500);
+      for await (const chunk of stream) {
+         chunks.push(chunk);
       }
       
-      if (cobaltData.status !== 'redirect' && cobaltData.status !== 'stream') {
-        return res.json({ 
-          error: 'Unexpected response from Cobalt API',
-          status: cobaltData.status
-        }, 500);
-      }
-      
-      const downloadUrl = cobaltData.url;
-      if (!downloadUrl) {
-        return res.json({ error: 'No download URL returned from Cobalt' }, 500);
-      }
-      
-      log(`Download URL obtained, fetching audio...`);
-      
-      // Download the audio file
-      const audioResponse = await fetch(downloadUrl);
-      if (!audioResponse.ok) {
-        return res.json({ 
-          error: 'Failed to download audio file',
-          status: audioResponse.status
-        }, 500);
-      }
-      
-      // Check content length
-      const contentLength = parseInt(audioResponse.headers.get('content-length') || '0', 10);
-      if (contentLength > MAX_FILE_SIZE) {
-        return res.json({ 
-          error: `File too large: ${(contentLength / 1024 / 1024).toFixed(1)}MB exceeds 100MB limit` 
-        }, 400);
-      }
-      
-      // Convert to buffer
-      const arrayBuffer = await audioResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      
+      const buffer = Buffer.concat(chunks);
       log(`Downloaded ${buffer.length} bytes`);
       
-      // Generate filename
-      const title = titleOverride || cobaltData.filename?.replace(/\.[^.]+$/, '') || `youtube_${videoId}`;
-      const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 100);
-      const fileName = `${safeTitle}.mp3`;
+      if (buffer.length > MAX_FILE_SIZE) {
+        return res.json({ error: 'File too large (exceeds 100MB)' }, 400);
+      }
       
-      log(`Uploading file: ${fileName}`);
+      const title = titleOverride || info.videoDetails?.title || `youtube_${videoId}`;
+      const safeTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').trim().substring(0, 100);
+      const ext = format.container === 'mp4' ? 'm4a' : 'webm';
+      const fileName = `${safeTitle}.${ext}`;
+      const mimeType = format.mimeType || (format.container === 'mp4' ? 'audio/mp4' : 'audio/webm');
+      
+      log(`Uploading file: ${fileName} as ${mimeType}`);
       
       const result = await storage.createFile(
         AUDIO_BUCKET,
         ID.unique(),
         {
           name: fileName,
-          type: 'audio/mpeg',
+          type: mimeType,
           size: buffer.length,
           data: buffer.toString('base64')
         },
