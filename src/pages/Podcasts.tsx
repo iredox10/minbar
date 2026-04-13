@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Play, Clock, User, Sparkles, TrendingUp, PlayCircle, ChevronRight } from 'lucide-react';
+import { Search, Play, Clock, User, TrendingUp, PlayCircle, ChevronRight } from 'lucide-react';
 import { getFeaturedSpeakers, getLatestEpisodes, getFeaturedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { getInProgressHistory } from '../lib/db';
 import type { Speaker, Episode, Series, CurrentTrack, PlaybackHistory } from '../types';
@@ -105,10 +105,6 @@ export function Podcasts() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
-              <Sparkles size={16} className="text-primary" />
-              <span className="text-sm text-primary font-medium">Free. No Ads. Your Daily Companion.</span>
-            </div>
             <div className="flex items-center justify-center gap-3 mb-2">
               <img src="/logo.svg" alt="Arewa Central" className="w-12 h-12 rounded-2xl shadow-lg shadow-primary/20" />
               <h1 className="text-4xl font-bold">

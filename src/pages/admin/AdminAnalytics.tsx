@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Play, Download, Search, Heart, TrendingUp, Clock, Activity } from 'lucide-react';
+import { Play, Download, Search, Heart, TrendingUp, Clock, Activity, List, PlayCircle, Star, Search as SearchIcon, Download as DownloadIcon, CheckCircle, BookOpen } from 'lucide-react';
 import { getAnalyticsStats } from '../../lib/analytics';
+import type { AnalyticsEvent } from '../../lib/analytics';
 import { cn } from '../../lib/utils';
 
 const container = {
@@ -29,7 +30,8 @@ export function AdminAnalytics() {
     playsByDay: [] as { date: string; count: number }[],
     topEpisodes: [] as { itemId: string; itemTitle: string; count: number }[],
     topSearches: [] as { query: string; count: number }[],
-    eventTypeCounts: [] as { type: string; count: number }[]
+    eventTypeCounts: [] as { type: string; count: number }[],
+    recentActivities: [] as AnalyticsEvent[]
   });
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -296,6 +298,86 @@ export function AdminAnalytics() {
                 <p>Data is stored in Appwrite and can be managed or deleted from the analytics collection.</p>
               </div>
             </div>
+          </motion.div>
+
+          <motion.div
+            variants={item}
+            initial="hidden"
+            animate="show"
+            className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <List size={20} className="text-blue-400" />
+              <h2 className="text-lg font-semibold text-slate-100">Live Activity Feed</h2>
+            </div>
+            
+            {stats.recentActivities.length > 0 ? (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                {stats.recentActivities.map((activity, i) => {
+                  let Icon = Activity;
+                  let colorClass = "text-slate-400 bg-slate-700/30";
+                  let actionText = "performed an action";
+
+                  if (activity.eventType === 'play_start') {
+                    Icon = PlayCircle;
+                    colorClass = "text-emerald-400 bg-emerald-400/10";
+                    actionText = `started playing ${activity.itemType || 'episode'}`;
+                  } else if (activity.eventType === 'download_complete') {
+                    Icon = DownloadIcon;
+                    colorClass = "text-blue-400 bg-blue-400/10";
+                    actionText = "downloaded";
+                  } else if (activity.eventType === 'search') {
+                    Icon = SearchIcon;
+                    colorClass = "text-amber-400 bg-amber-400/10";
+                    actionText = "searched for";
+                  } else if (activity.eventType === 'favorite_add') {
+                    Icon = Star;
+                    colorClass = "text-rose-400 bg-rose-400/10";
+                    actionText = "favorited";
+                  } else if (activity.eventType === 'play_complete') {
+                    Icon = CheckCircle;
+                    colorClass = "text-emerald-500 bg-emerald-500/10";
+                    actionText = "finished playing";
+                  } else if (activity.eventType === 'dua_view') {
+                    Icon = BookOpen;
+                    colorClass = "text-violet-400 bg-violet-400/10";
+                    actionText = "viewed dua";
+                  }
+
+                  const timeString = activity.timestamp 
+                    ? new Date(activity.timestamp).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                      })
+                    : 'Unknown time';
+
+                  const userString = activity.userId ? `User (${activity.userId.substring(0, 6)}...)` : `Anonymous (${activity.sessionId?.substring(0, 6)}...)`;
+
+                  return (
+                    <div key={`${activity.sessionId}-${i}`} className="flex items-start gap-4 p-3 hover:bg-slate-700/20 rounded-xl transition-colors">
+                      <div className={cn("p-2 rounded-full mt-1 shrink-0", colorClass)}>
+                        <Icon size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-slate-300 text-sm">
+                          <span className="font-medium text-slate-100">{userString}</span> {actionText} 
+                          <span className="font-medium text-slate-100 ml-1">
+                            "{activity.itemTitle || activity.itemId || 'something'}"
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                          <Clock size={10} />
+                          {timeString}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-slate-400">
+                No recent activity
+              </div>
+            )}
           </motion.div>
         </>
       )}

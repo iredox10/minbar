@@ -14,7 +14,7 @@ export type AnalyticsEventType =
   | 'radio_start'
   | 'dua_view';
 
-interface AnalyticsEvent {
+export interface AnalyticsEvent {
   eventType: AnalyticsEventType;
   itemId?: string;
   itemType?: 'episode' | 'series' | 'speaker' | 'radio' | 'dua';
@@ -22,6 +22,7 @@ interface AnalyticsEvent {
   duration?: number;
   userId?: string;
   sessionId?: string;
+  timestamp?: string;
 }
 
 let sessionId: string | null = null;
@@ -128,6 +129,7 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
   topEpisodes: { itemId: string; itemTitle: string; count: number }[];
   topSearches: { query: string; count: number }[];
   eventTypeCounts: { type: string; count: number }[];
+  recentActivities: AnalyticsEvent[];
 }> {
   try {
     const startDate = new Date();
@@ -138,7 +140,8 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       ANALYTICS_COLLECTION,
       [
         Query.greaterThanEqual('timestamp', startDate.toISOString()),
-        Query.limit(5000)
+        Query.limit(5000),
+        Query.orderDesc('timestamp')
       ]
     );
 
@@ -200,6 +203,18 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count);
 
+    // Get 50 most recent activities
+    const recentActivities = documents.slice(0, 50).map(d => ({
+      eventType: d.eventType,
+      itemId: d.itemId,
+      itemType: d.itemType,
+      itemTitle: d.itemTitle,
+      duration: d.duration,
+      userId: d.userId,
+      sessionId: d.sessionId,
+      timestamp: d.timestamp
+    })) as AnalyticsEvent[];
+
     return {
       totalPlays,
       totalDownloads,
@@ -208,7 +223,8 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       playsByDay,
       topEpisodes,
       topSearches,
-      eventTypeCounts
+      eventTypeCounts,
+      recentActivities
     };
   } catch (error) {
     console.error('Failed to get analytics stats:', error);
@@ -220,7 +236,8 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       playsByDay: [],
       topEpisodes: [],
       topSearches: [],
-      eventTypeCounts: []
+      eventTypeCounts: [],
+      recentActivities: []
     };
   }
 }
