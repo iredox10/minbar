@@ -1,4 +1,5 @@
 import { adminDatabases, DATABASE_ID, ID, Query } from './admin';
+import { Permission, Role } from 'appwrite';
 
 export const ANALYTICS_COLLECTION = 'analytics';
 
@@ -51,7 +52,13 @@ export async function trackEvent(event: AnalyticsEvent): Promise<void> {
         userId,
         sessionId: getSessionId(),
         timestamp: new Date().toISOString()
-      }
+      },
+      [
+        Permission.read(Role.any()),
+        Permission.write(Role.any()),
+        Permission.update(Role.any()),
+        Permission.delete(Role.any())
+      ]
     );
   } catch (error) {
     console.error('Failed to track analytics event:', error);
@@ -120,6 +127,16 @@ export function trackDuaView(duaId: string, duaTitle: string): void {
   });
 }
 
+export interface UserAnalytics {
+  id: string; // userId or sessionId
+  isRegistered: boolean;
+  totalPlays: number;
+  totalDownloads: number;
+  totalSearches: number;
+  totalFavorites: number;
+  lastActive: string;
+}
+
 export async function getAnalyticsStats(days: number = 30): Promise<{
   totalPlays: number;
   totalDownloads: number;
@@ -130,6 +147,7 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
   topSearches: { query: string; count: number }[];
   eventTypeCounts: { type: string; count: number }[];
   recentActivities: AnalyticsEvent[];
+  userStats: UserAnalytics[];
 }> {
   try {
     const startDate = new Date();
@@ -147,60 +165,67 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
 
     const documents = response.documents;
     
-    const totalPlays = documents.filter(d => d.eventType === 'play_start').length;
-    const totalDownloads = documents.filter(d => d.eventType === 'download_complete').length;
-    const totalSearches = documents.filter(d => d.eventType === 'search').length;
-    const totalFavorites = documents.filter(d => d.eventType === 'favorite_add').length;
+    const totalPlays = new Set(documents.filter(d => d.eventType === 'play_start').map(d => d.userId || d.sessionId)).size;
+    const totalDownloads = new Set(documents.filter(d => d.eventType === 'download_complete').map(d => d.userId || d.sessionId)).size;
+    const totalSearches = new Set(documents.filter(d => d.eventType === 'search').map(d => d.userId || d.sessionId)).size;
+    const totalFavorites = new Set(documents.filter(d => d.eventType === 'favorite_add').map(d => d.userId || d.sessionId)).size;
 
-    const playsByDayMap = new Map<string, number>();
+    const playsByDayMap = new Map<string, Set<string>>();
     documents
       .filter(d => d.eventType === 'play_start' && d.timestamp)
       .forEach(d => {
         const date = new Date(d.timestamp).toISOString().split('T')[0];
-        playsByDayMap.set(date, (playsByDayMap.get(date) || 0) + 1);
+        if (!playsByDayMap.has(date)) playsByDayMap.set(date, new Set());
+        playsByDayMap.get(date)!.add(d.userId || d.sessionId || 'unknown');
       });
     
     const playsByDay = Array.from(playsByDayMap.entries())
-      .map(([date, count]) => ({ date, count }))
+      .map(([date, usersSet]) => ({ date, count: usersSet.size }))
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-days);
 
-    const episodeCounts = new Map<string, { title: string; count: number }>();
+    const episodeUsersMap = new Map<string, { title: string; users: Set<string> }>();
     documents
       .filter(d => d.eventType === 'play_start' && d.itemId)
       .forEach(d => {
-        const existing = episodeCounts.get(d.itemId);
+        const existing = episodeUsersMap.get(d.itemId);
         if (existing) {
-          existing.count++;
+          existing.users.add(d.userId || d.sessionId || 'unknown');
         } else {
-          episodeCounts.set(d.itemId, { title: d.itemTitle || 'Unknown', count: 1 });
+          episodeUsersMap.set(d.itemId, { 
+            title: d.itemTitle || 'Unknown', 
+            users: new Set([d.userId || d.sessionId || 'unknown']) 
+          });
         }
       });
     
-    const topEpisodes = Array.from(episodeCounts.entries())
-      .map(([itemId, data]) => ({ itemId, itemTitle: data.title, count: data.count }))
+    const topEpisodes = Array.from(episodeUsersMap.entries())
+      .map(([itemId, data]) => ({ itemId, itemTitle: data.title, count: data.users.size }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    const searchCounts = new Map<string, number>();
+    const searchUsersMap = new Map<string, Set<string>>();
     documents
       .filter(d => d.eventType === 'search' && d.itemTitle)
       .forEach(d => {
-        searchCounts.set(d.itemTitle, (searchCounts.get(d.itemTitle) || 0) + 1);
+        const query = d.itemTitle!;
+        if (!searchUsersMap.has(query)) searchUsersMap.set(query, new Set());
+        searchUsersMap.get(query)!.add(d.userId || d.sessionId || 'unknown');
       });
     
-    const topSearches = Array.from(searchCounts.entries())
-      .map(([query, count]) => ({ query, count }))
+    const topSearches = Array.from(searchUsersMap.entries())
+      .map(([query, usersSet]) => ({ query, count: usersSet.size }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    const eventTypeCountsMap = new Map<string, number>();
+    const eventTypeCountsMap = new Map<string, Set<string>>();
     documents.forEach(d => {
-      eventTypeCountsMap.set(d.eventType, (eventTypeCountsMap.get(d.eventType) || 0) + 1);
+      if (!eventTypeCountsMap.has(d.eventType)) eventTypeCountsMap.set(d.eventType, new Set());
+      eventTypeCountsMap.get(d.eventType)!.add(d.userId || d.sessionId || 'unknown');
     });
     
     const eventTypeCounts = Array.from(eventTypeCountsMap.entries())
-      .map(([type, count]) => ({ type, count }))
+      .map(([type, usersSet]) => ({ type, count: usersSet.size }))
       .sort((a, b) => b.count - a.count);
 
     // Get 50 most recent activities
@@ -215,6 +240,38 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       timestamp: d.timestamp
     })) as AnalyticsEvent[];
 
+    const userStatsMap = new Map<string, UserAnalytics>();
+    documents.forEach(d => {
+      const id = d.userId || d.sessionId;
+      if (!id) return;
+      
+      if (!userStatsMap.has(id)) {
+        userStatsMap.set(id, {
+          id,
+          isRegistered: !!d.userId,
+          totalPlays: 0,
+          totalDownloads: 0,
+          totalSearches: 0,
+          totalFavorites: 0,
+          lastActive: d.timestamp || new Date().toISOString()
+        });
+      }
+      
+      const user = userStatsMap.get(id)!;
+      // Update lastActive if newer
+      if (d.timestamp && d.timestamp > user.lastActive) {
+        user.lastActive = d.timestamp;
+      }
+      
+      if (d.eventType === 'play_start') user.totalPlays++;
+      if (d.eventType === 'download_complete') user.totalDownloads++;
+      if (d.eventType === 'search') user.totalSearches++;
+      if (d.eventType === 'favorite_add') user.totalFavorites++;
+    });
+
+    const userStats = Array.from(userStatsMap.values())
+      .sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+
     return {
       totalPlays,
       totalDownloads,
@@ -224,7 +281,8 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       topEpisodes,
       topSearches,
       eventTypeCounts,
-      recentActivities
+      recentActivities,
+      userStats
     };
   } catch (error) {
     console.error('Failed to get analytics stats:', error);
@@ -237,7 +295,8 @@ export async function getAnalyticsStats(days: number = 30): Promise<{
       topEpisodes: [],
       topSearches: [],
       eventTypeCounts: [],
-      recentActivities: []
+      recentActivities: [],
+      userStats: []
     };
   }
 }

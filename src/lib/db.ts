@@ -61,12 +61,36 @@ db.version(3).stores({
 
 export { db };
 
+const blobUrlCache = new Map<string, string>();
+
 export async function getDownload(episodeId: string): Promise<DownloadedEpisode | undefined> {
-  return db.downloads.where('episodeId').equals(episodeId).first();
+  const download = await db.downloads.where('episodeId').equals(episodeId).first();
+  if (download && download.blob) {
+    if (blobUrlCache.has(episodeId)) {
+      download.localBlobUrl = blobUrlCache.get(episodeId);
+    } else {
+      const url = URL.createObjectURL(download.blob);
+      blobUrlCache.set(episodeId, url);
+      download.localBlobUrl = url;
+    }
+  }
+  return download;
 }
 
 export async function getAllDownloads(): Promise<DownloadedEpisode[]> {
-  return db.downloads.orderBy('downloadedAt').reverse().toArray();
+  const downloads = await db.downloads.orderBy('downloadedAt').reverse().toArray();
+  return downloads.map(download => {
+    if (download.blob) {
+      if (blobUrlCache.has(download.episodeId)) {
+        download.localBlobUrl = blobUrlCache.get(download.episodeId);
+      } else {
+        const url = URL.createObjectURL(download.blob);
+        blobUrlCache.set(download.episodeId, url);
+        download.localBlobUrl = url;
+      }
+    }
+    return download;
+  });
 }
 
 export async function saveDownload(episode: Omit<DownloadedEpisode, 'id'>): Promise<number> {
@@ -74,13 +98,20 @@ export async function saveDownload(episode: Omit<DownloadedEpisode, 'id'>): Prom
   if (existing) {
     return existing.id!;
   }
-  return db.downloads.add(episode as DownloadedEpisode) as Promise<number>;
+  
+  if (episode.localBlobUrl) {
+    blobUrlCache.set(episode.episodeId, episode.localBlobUrl);
+  }
+  
+  // We don't need to persist the transient object URL in IndexedDB
+  const { localBlobUrl, ...toSave } = episode;
+  return db.downloads.add(toSave as DownloadedEpisode) as Promise<number>;
 }
 
 export async function deleteDownload(episodeId: string): Promise<void> {
-  const download = await getDownload(episodeId);
-  if (download?.localBlobUrl) {
-    URL.revokeObjectURL(download.localBlobUrl);
+  if (blobUrlCache.has(episodeId)) {
+    URL.revokeObjectURL(blobUrlCache.get(episodeId)!);
+    blobUrlCache.delete(episodeId);
   }
   await db.downloads.where('episodeId').equals(episodeId).delete();
 }

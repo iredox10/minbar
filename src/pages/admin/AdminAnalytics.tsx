@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Play, Download, Search, Heart, TrendingUp, Clock, Activity, List, PlayCircle, Star, Search as SearchIcon, Download as DownloadIcon, CheckCircle, BookOpen } from 'lucide-react';
 import { getAnalyticsStats } from '../../lib/analytics';
-import type { AnalyticsEvent } from '../../lib/analytics';
+import type { AnalyticsEvent, UserAnalytics } from '../../lib/analytics';
 import { cn } from '../../lib/utils';
+import { Users } from 'lucide-react';
 
 const container = {
   hidden: { opacity: 0 },
@@ -31,7 +32,8 @@ export function AdminAnalytics() {
     topEpisodes: [] as { itemId: string; itemTitle: string; count: number }[],
     topSearches: [] as { query: string; count: number }[],
     eventTypeCounts: [] as { type: string; count: number }[],
-    recentActivities: [] as AnalyticsEvent[]
+    recentActivities: [] as AnalyticsEvent[],
+    userStats: [] as UserAnalytics[]
   });
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -47,10 +49,10 @@ export function AdminAnalytics() {
   }, [days]);
 
   const statCards = [
-    { label: 'Total Plays', value: stats.totalPlays, icon: Play, color: 'bg-primary', change: `Last ${days} days` },
-    { label: 'Downloads', value: stats.totalDownloads, icon: Download, color: 'bg-emerald-500', change: `Last ${days} days` },
-    { label: 'Searches', value: stats.totalSearches, icon: Search, color: 'bg-violet-500', change: `Last ${days} days` },
-    { label: 'Favorites Added', value: stats.totalFavorites, icon: Heart, color: 'bg-rose-500', change: `Last ${days} days` }
+    { label: 'Unique Listeners', value: stats.totalPlays, icon: Play, color: 'bg-primary', change: `Last ${days} days` },
+    { label: 'Unique Downloaders', value: stats.totalDownloads, icon: Download, color: 'bg-emerald-500', change: `Last ${days} days` },
+    { label: 'Unique Searchers', value: stats.totalSearches, icon: Search, color: 'bg-violet-500', change: `Last ${days} days` },
+    { label: 'Unique Favoriters', value: stats.totalFavorites, icon: Heart, color: 'bg-rose-500', change: `Last ${days} days` }
   ];
 
   const formatDate = (dateStr: string) => {
@@ -121,7 +123,7 @@ export function AdminAnalytics() {
             >
               <div className="flex items-center gap-2 mb-6">
                 <TrendingUp size={20} className="text-primary" />
-                <h2 className="text-lg font-semibold text-slate-100">Plays Over Time</h2>
+                <h2 className="text-lg font-semibold text-slate-100">Unique Listeners Over Time</h2>
               </div>
               {stats.playsByDay.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
@@ -147,7 +149,7 @@ export function AdminAnalytics() {
                       stroke="#00D9FF" 
                       strokeWidth={2}
                       dot={{ fill: '#00D9FF', strokeWidth: 2 }}
-                      name="Plays"
+                      name="Unique Users"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -233,7 +235,7 @@ export function AdminAnalytics() {
                         borderRadius: '12px'
                       }}
                     />
-                    <Bar dataKey="count" fill="#22C55E" radius={[0, 4, 4, 0]} name="Plays" />
+                    <Bar dataKey="count" fill="#22C55E" radius={[0, 4, 4, 0]} name="Unique Listeners" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -262,7 +264,7 @@ export function AdminAnalytics() {
                     >
                       <span className="text-lg font-bold text-slate-500 w-6">{index + 1}</span>
                       <span className="flex-1 text-slate-200 truncate">{search.query}</span>
-                      <span className="text-sm text-slate-400">{search.count} searches</span>
+                      <span className="text-sm text-slate-400">{search.count} unique searchers</span>
                     </div>
                   ))}
                 </div>
@@ -378,6 +380,65 @@ export function AdminAnalytics() {
                 No recent activity
               </div>
             )}
+          </motion.div>
+
+          <motion.div
+            variants={item}
+            initial="hidden"
+            animate="show"
+            className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Users size={20} className="text-teal-400" />
+              <h2 className="text-lg font-semibold text-slate-100">User Activity Summary</h2>
+            </div>
+            
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full min-w-[600px] text-left text-sm text-slate-300">
+                <thead className="bg-slate-700/50 text-slate-400 uppercase font-semibold">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-lg">User / Device</th>
+                    <th className="px-4 py-3">Plays</th>
+                    <th className="px-4 py-3">Downloads</th>
+                    <th className="px-4 py-3">Favorites</th>
+                    <th className="px-4 py-3">Searches</th>
+                    <th className="px-4 py-3 rounded-r-lg">Last Active</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  {stats.userStats.length > 0 ? (
+                    stats.userStats.map((user) => (
+                      <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="px-4 py-3 flex items-center gap-2">
+                          <span className={cn(
+                            "w-2 h-2 rounded-full",
+                            user.isRegistered ? "bg-emerald-400" : "bg-slate-500"
+                          )} />
+                          <span className="font-mono text-xs">
+                            {user.isRegistered ? `Registered (${user.id.substring(0, 8)}...)` : `Guest (${user.id.substring(0, 8)}...)`}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{user.totalPlays}</td>
+                        <td className="px-4 py-3">{user.totalDownloads}</td>
+                        <td className="px-4 py-3">{user.totalFavorites}</td>
+                        <td className="px-4 py-3">{user.totalSearches}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {new Date(user.lastActive).toLocaleString(undefined, {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                        No user activity recorded in this period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </motion.div>
         </>
       )}

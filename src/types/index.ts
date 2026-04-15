@@ -64,7 +64,8 @@ export interface DownloadedEpisode {
   seriesId?: string;
   speakerId?: string;
   audioUrl: string;
-  localBlobUrl: string;
+  localBlobUrl?: string; // transient url generated at runtime
+  blob?: Blob; // stored natively in indexeddb
   duration: number;
   downloadedAt: Date;
   fileSize: number;

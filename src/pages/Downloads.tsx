@@ -17,7 +17,7 @@ export function Downloads() {
     const track: CurrentTrack = {
       id: episode.episodeId,
       title: episode.title,
-      audioUrl: episode.localBlobUrl,
+      audioUrl: episode.localBlobUrl || episode.audioUrl,
       duration: episode.duration,
       type: 'episode'
     };

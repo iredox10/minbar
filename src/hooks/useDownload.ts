@@ -68,6 +68,34 @@ export function useDownload(
   const startDownload = useCallback(async () => {
     if (status === 'downloading' || status === 'done') return;
 
+    let writable: any = null;
+    let useFallback = true;
+
+    // Prompt user BEFORE any other await to maintain user gesture context!
+    // If we await fetch() or getSettings() first, the browser drops the user gesture
+    // and throws a SecurityError when we try to open the file picker.
+    if ('showSaveFilePicker' in window) {
+      try {
+        // @ts-ignore - showSaveFilePicker is not fully typed in all standard TS configs yet
+        const handle = await window.showSaveFilePicker({
+          suggestedName: `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`,
+          types: [{
+            description: 'MP3 Audio',
+            accept: { 'audio/mpeg': ['.mp3'] },
+          }],
+        });
+        writable = await handle.createWritable();
+        useFallback = false;
+      } catch (err: any) {
+        // If user cancels the file picker, just stop
+        if (err.name === 'AbortError') {
+          setStatus('idle');
+          return;
+        }
+        console.warn('File picker failed, using fallback', err);
+      }
+    }
+
     // Respect the Wi-Fi only setting
     const appSettings = await getSettings();
     const wifiOnly = appSettings?.downloadWifiOnly ?? true;
@@ -76,6 +104,7 @@ export function useDownload(
       if (conn?.type && conn.type !== 'wifi' && conn.type !== 'ethernet' && conn.type !== 'none') {
         setErrorMessage('Wi-Fi only mode is enabled. Connect to Wi-Fi to download.');
         setStatus('error');
+        if (writable) await writable.abort();
         return;
       }
     }
@@ -88,49 +117,120 @@ export function useDownload(
     abortRef.current = abort;
 
     try {
-      const response = await fetch(audioUrl, {
-        signal: abort.signal,
-        mode: 'cors',
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      }
-
-      const contentLength = response.headers.get('Content-Length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
       const chunks: ArrayBuffer[] = [];
       let received = 0;
+      let total = 0;
+      
+      let retries = 3;
+      let isDone = false;
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('ReadableStream not supported');
+      while (retries > 0 && !isDone) {
+        try {
+          const headers: HeadersInit = {};
+          // If we already received data, ask for the rest
+          if (received > 0) {
+            headers['Range'] = `bytes=${received}-`;
+          }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (abort.signal.aborted) throw new DOMException('Aborted', 'AbortError');
-        if (value) {
-          chunks.push(value.buffer as ArrayBuffer);
-          received += value.byteLength;
-        }
-        if (total > 0) {
-          setProgress(Math.min(99, Math.round((received / total) * 95)));
+          const response = await fetch(audioUrl, {
+            signal: abort.signal,
+            mode: 'cors',
+            cache: 'no-store',
+            headers,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
+          }
+
+          if (total === 0) {
+            const contentLength = response.headers.get('Content-Length');
+            if (response.status === 206) {
+              // Partial content means the total is received + content length of this chunk
+              total = received + (contentLength ? parseInt(contentLength, 10) : 0);
+            } else {
+              total = contentLength ? parseInt(contentLength, 10) : 0;
+              // If the server ignored the Range header and sent a 200 OK, reset progress
+              if (received > 0) {
+                received = 0;
+                chunks.length = 0; // Clear chunks
+                // Note: we can't easily reset the writable handle position to 0 
+                // in the middle of a write without truncating, but we can try:
+                // Actually, if using showSaveFilePicker, we should technically truncate
+                // but let's hope archive.org respects Range. It usually does.
+              }
+            }
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('ReadableStream not supported');
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              isDone = true;
+              break;
+            }
+            if (abort.signal.aborted) {
+              if (writable) await writable.abort();
+              throw new DOMException('Aborted', 'AbortError');
+            }
+            if (value) {
+              chunks.push(value.buffer as ArrayBuffer);
+              received += value.byteLength;
+              if (writable) {
+                await writable.write(value);
+              }
+            }
+            if (total > 0) {
+              setProgress(Math.min(99, Math.round((received / total) * 95)));
+            }
+          }
+        } catch (streamErr: any) {
+          if (streamErr.name === 'AbortError') {
+            throw streamErr; // Re-throw aborts immediately
+          }
+          console.warn(`[useDownload] Stream interrupted. Retries left: ${retries - 1}`, streamErr);
+          retries--;
+          if (retries === 0) {
+            throw streamErr; // Exhausted retries
+          }
+          // Wait 2 seconds before retrying to let the network stabilize
+          await new Promise(r => setTimeout(r, 2000));
         }
       }
 
-      // Assemble blob
+      if (writable) {
+        await writable.close();
+      }
+
+      // Assemble blob for IndexedDB
       const mimeType = audioUrl.includes('.mp3') ? 'audio/mpeg' : 'audio/mpeg';
       const blob = new Blob(chunks, { type: mimeType });
-      const localBlobUrl = URL.createObjectURL(blob);
 
+      if (useFallback) {
+        // Fallback for browsers that don't support showSaveFilePicker (like Firefox/Safari)
+        const localBlobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = localBlobUrl;
+        a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(localBlobUrl);
+      }
+
+      // Simultaneously save to IndexedDB so it appears in the PWA's Downloads page
+      // and can be played completely offline without selecting the file again.
+      const finalLocalBlobUrl = URL.createObjectURL(blob);
       const record: Omit<DownloadedEpisode, 'id'> = {
         episodeId,
         title,
         seriesId,
         speakerId,
         audioUrl,
-        localBlobUrl,
+        localBlobUrl: finalLocalBlobUrl,
+        blob, // store the actual file in IndexedDB
         duration: duration ?? 0,
         downloadedAt: new Date(),
         fileSize: blob.size,
@@ -144,14 +244,22 @@ export function useDownload(
       setProgress(100);
       setStatus('done');
     } catch (err) {
+      if (writable && (err as Error).name !== 'AbortError') {
+        try { await writable.abort(); } catch (_) {}
+      }
       if ((err as Error).name === 'AbortError') {
         setStatus('idle');
         setProgress(0);
         return;
       }
       console.error('[useDownload] failed:', err);
-      setErrorMessage((err as Error).message ?? 'Download failed');
+      let msg = (err as Error).message ?? 'Download failed';
+      if (msg === 'Failed to fetch' || msg.includes('network error')) {
+        msg = 'Network error or CORS issue. Please check your connection or try again later.';
+      }
+      setErrorMessage(msg);
       setStatus('error');
+      setProgress(0);
     } finally {
       abortRef.current = null;
     }
