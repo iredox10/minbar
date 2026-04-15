@@ -13,6 +13,7 @@ import {
   Library as LibraryIcon,
   Bookmark,
 } from 'lucide-react';
+import { SupportBanner } from '../components/SupportBanner';
 
 const container = {
   hidden: { opacity: 0 },
@@ -195,6 +196,11 @@ export function Library() {
             ))}
           </div>
         </motion.section>
+
+        {/* Support Banner */}
+        <div className="pt-4 -mx-4">
+          <SupportBanner />
+        </div>
       </div>
     </div>
   );

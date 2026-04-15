@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Play, Clock, User, TrendingUp, PlayCircle, ChevronRight } from 'lucide-react';
+import { Search, Play, Clock, User, TrendingUp, PlayCircle, ChevronRight, Heart } from 'lucide-react';
 import { getFeaturedSpeakers, getLatestEpisodes, getFeaturedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { getInProgressHistory } from '../lib/db';
 import type { Speaker, Episode, Series, CurrentTrack, PlaybackHistory } from '../types';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 import { DownloadButton } from '../components/audio/DownloadButton';
+import { SupportBanner } from '../components/SupportBanner';
 
 const container = {
   hidden: { opacity: 0 },
@@ -100,6 +101,20 @@ export function Podcasts() {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         
         <div className="relative px-4 pt-8 pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-end mb-4"
+          >
+            <Link 
+              to="/donate"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 shadow-lg shadow-rose-500/5 backdrop-blur-md"
+            >
+              <Heart size={14} className="fill-rose-400/50" />
+              <span className="text-xs font-semibold tracking-wide">Support Us</span>
+            </Link>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -422,6 +437,11 @@ export function Podcasts() {
               </div>
             </motion.section>
           )}
+
+          {/* Support Banner */}
+          <div className="pt-4 -mx-4">
+            <SupportBanner />
+          </div>
 
           {/* Empty State */}
           {speakers.length === 0 && latestEpisodes.length === 0 && (

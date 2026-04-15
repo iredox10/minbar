@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -656,10 +656,17 @@ export function PlayerPage() {
             <ChevronDown size={20} />
           </motion.button>
 
-          <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-              {isRadio ? 'Live Radio' : currentTrack.type === 'dua' ? 'Dua' : 'Now Playing'}
-            </p>
+          <div className="flex-1 flex justify-center">
+            <Link to="/donate">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-sm backdrop-blur-md"
+              >
+                <Heart size={12} className="fill-rose-400/50" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em]">Support Us</span>
+              </motion.div>
+            </Link>
           </div>
 
           <motion.button

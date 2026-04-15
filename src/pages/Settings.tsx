@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders } from 'lucide-react';
+import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders, Heart, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getSettings, updateSettings } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
 import { InstallButton } from '../components/InstallButton';
@@ -259,6 +260,29 @@ export function Settings() {
                 <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
               </div>
             </label>
+          </div>
+        </motion.section>
+
+        {/* Support */}
+        <motion.section variants={item} className="space-y-3">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Support</h2>
+          
+          <div className="glass-card rounded-2xl overflow-hidden">
+            <Link 
+              to="/donate"
+              className="flex items-center justify-between p-4 group hover:bg-slate-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 transition-colors">
+                  <Heart className="w-5 h-5 text-rose-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-200 font-medium">Donate</p>
+                  <p className="text-xs text-slate-500">Support the development</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
+            </Link>
           </div>
         </motion.section>
 

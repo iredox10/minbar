@@ -36,6 +36,7 @@ const PlayerPage = lazy(() => import('./pages/PlayerPage').then(m => ({ default:
 const Duas = lazy(() => import('./pages/Duas').then(m => ({ default: m.Duas })));
 const Downloads = lazy(() => import('./pages/Downloads').then(m => ({ default: m.Downloads })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Donate = lazy(() => import('./pages/Donate').then(m => ({ default: m.Donate })));
 const EpisodeDetail = lazy(() => import('./pages/EpisodeDetail').then(m => ({ default: m.EpisodeDetail })));
 const Series = lazy(() => import('./pages/Series').then(m => ({ default: m.Series })));
 const Library = lazy(() => import('./pages/Library').then(m => ({ default: m.Library })));
@@ -133,6 +134,7 @@ function App() {
               <Route path="/duas/:id" element={<Duas />} />
               <Route path="/downloads" element={<Downloads />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/donate" element={<Donate />} />
               <Route path="/library" element={<Library />} />
               <Route path="/bookmarks" element={<Bookmarks />} />
             </Route>
