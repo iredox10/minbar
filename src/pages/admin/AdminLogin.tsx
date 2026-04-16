@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { cn } from '../../lib/utils';
 
@@ -96,6 +97,14 @@ export function AdminLogin() {
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+              <div className="flex justify-end mt-2">
+                <Link 
+                  to="/admin/forgot-password" 
+                  className="text-sm text-primary hover:text-primary-light transition-colors"
+                >
+                  Forgot Password?
+                </Link>
               </div>
             </div>
 

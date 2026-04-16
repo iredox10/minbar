@@ -196,6 +196,16 @@ async function setup() {
     { type: 'boolean', key: 'isLive', required: false, default: true }
   ]);
 
+  // App Settings
+  await createCollection('app_settings', 'App Settings', [
+    { type: 'boolean', key: 'isDonationsEnabled', required: false, default: true },
+    { type: 'string', key: 'paystackUrl', size: 1000, required: false },
+    { type: 'string', key: 'flutterwaveUrl', size: 1000, required: false },
+    { type: 'string', key: 'bankName', size: 255, required: false },
+    { type: 'string', key: 'accountName', size: 255, required: false },
+    { type: 'string', key: 'accountNumber', size: 50, required: false }
+  ]);
+
   // Analytics
   await createCollection('analytics', 'Analytics', [
     { type: 'string', key: 'eventType', size: 50, required: true },

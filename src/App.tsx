@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AudioProvider } from './context/AudioContext';
 import { AdminProvider } from './context/AdminContext';
@@ -58,6 +58,9 @@ const AdminRadioForm = lazy(() => import('./pages/admin/AdminRadioForm').then(m 
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 const AdminArchiveImport = lazy(() => import('./pages/admin/AdminArchiveImport').then(m => ({ default: m.AdminArchiveImport })));
 const AdminYouTubeImport = lazy(() => import('./pages/admin/AdminYouTubeImport').then(m => ({ default: m.AdminYouTubeImport })));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+const AdminForgotPassword = lazy(() => import('./pages/admin/AdminForgotPassword').then(m => ({ default: m.AdminForgotPassword })));
+const AdminResetPassword = lazy(() => import('./pages/admin/AdminResetPassword').then(m => ({ default: m.AdminResetPassword })));
 
 function PageLoader() {
   return (
@@ -72,12 +75,27 @@ function PageLoader() {
 
 function AdminRoutes() {
   const { isAuthenticated, loading } = useAdmin();
+  const location = useLocation();
 
   if (loading) {
     return <PageLoader />;
   }
 
   if (!isAuthenticated) {
+    if (location.pathname === '/admin/forgot-password') {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <AdminForgotPassword />
+        </Suspense>
+      );
+    }
+    if (location.pathname === '/admin/reset-password') {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <AdminResetPassword />
+        </Suspense>
+      );
+    }
     return <AdminLogin />;
   }
 
@@ -104,6 +122,7 @@ function AdminRoutes() {
           <Route path="radio/:id" element={<AdminRadioForm />} />
           <Route path="import" element={<AdminArchiveImport />} />
           <Route path="youtube" element={<AdminYouTubeImport />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>
     </Suspense>

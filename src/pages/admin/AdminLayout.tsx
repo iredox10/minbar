@@ -14,7 +14,8 @@ import {
   ChevronRight,
   BarChart2,
   Upload,
-  Youtube
+  Youtube,
+  Settings
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { cn } from '../../lib/utils';
@@ -28,7 +29,8 @@ const navItems = [
   { path: '/admin/series', icon: BookOpen, label: 'Series' },
   { path: '/admin/episodes', icon: Play, label: 'Episodes' },
   { path: '/admin/duas', icon: Heart, label: 'Duas' },
-  { path: '/admin/radio', icon: Radio, label: 'Radio Stations' }
+  { path: '/admin/radio', icon: Radio, label: 'Radio Stations' },
+  { path: '/admin/settings', icon: Settings, label: 'App Settings' }
 ];
 
 export function AdminLayout() {

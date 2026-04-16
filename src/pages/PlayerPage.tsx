@@ -17,6 +17,8 @@ import { ShareSheet } from '../components/audio/ShareSheet';
 import { DownloadSheet } from '../components/audio/DownloadSheet';
 import { useDownload } from '../hooks/useDownload';
 
+import { useAppSettings } from '../hooks/useAppSettings';
+
 function formatSleepTimer(ms: number | null): string {
   if (!ms || ms <= 0) return '';
   const totalSeconds = Math.floor(ms / 1000);
@@ -562,6 +564,8 @@ export function PlayerPage() {
     currentTrack?.duration,
   );
 
+  const { settings, loading: settingsLoading } = useAppSettings();
+
   const isPlaying = playerState === 'playing';
   const isLoading = playerState === 'loading';
 
@@ -657,16 +661,18 @@ export function PlayerPage() {
           </motion.button>
 
           <div className="flex-1 flex justify-center">
-            <Link to="/donate">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-sm backdrop-blur-md"
-              >
-                <Heart size={12} className="fill-rose-400/50" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.1em]">Support Us</span>
-              </motion.div>
-            </Link>
+            {(!settingsLoading && settings.isDonationsEnabled) && (
+              <Link to="/donate">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-sm backdrop-blur-md"
+                >
+                  <Heart size={12} className="fill-rose-400/50" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">Support Us</span>
+                </motion.div>
+              </Link>
+            )}
           </div>
 
           <motion.button

@@ -1,5 +1,5 @@
 import { Client, Databases, Storage, Query } from 'appwrite';
-import type { Speaker, Series, Episode, Dua, RadioStation } from '../types';
+import type { Speaker, Series, Episode, Dua, RadioStation, AppSettingsDoc } from '../types';
 
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
@@ -22,6 +22,7 @@ export const EPISODES_COLLECTION = 'episodes';
 export const DUAS_COLLECTION = 'duas';
 export const RADIO_COLLECTION = 'radio_stations';
 export const USER_PLAYBACK_COLLECTION = 'user_playback';
+export const APP_SETTINGS_COLLECTION = 'app_settings';
 
 export function isAppwriteConfigured(): boolean {
   return !!APPWRITE_PROJECT_ID;
@@ -380,5 +381,34 @@ export async function clearPlaybackState(): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to clear playback state:', error);
+  }
+}
+
+export async function getAppSettings(): Promise<AppSettingsDoc | null> {
+  try {
+    if (!isAppwriteConfigured()) return null;
+    return await databases.getDocument(DATABASE_ID, APP_SETTINGS_COLLECTION, 'global_config') as unknown as AppSettingsDoc;
+  } catch (error: any) {
+    if (error.code !== 404) {
+      console.error('Error fetching app settings:', error);
+    }
+    return null;
+  }
+}
+
+export async function updateAppSettings(data: Partial<AppSettingsDoc>) {
+  try {
+    if (!isAppwriteConfigured()) throw new Error('Appwrite not configured');
+    try {
+      return await databases.updateDocument(DATABASE_ID, APP_SETTINGS_COLLECTION, 'global_config', data);
+    } catch (err: any) {
+      if (err.code === 404) {
+        return await databases.createDocument(DATABASE_ID, APP_SETTINGS_COLLECTION, 'global_config', data);
+      }
+      throw err;
+    }
+  } catch (error) {
+    console.error('Error updating app settings:', error);
+    throw error;
   }
 }

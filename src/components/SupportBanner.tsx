@@ -1,8 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Heart, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 export function SupportBanner() {
+  const { settings, loading } = useAppSettings();
+
+  if (loading || !settings.isDonationsEnabled) {
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

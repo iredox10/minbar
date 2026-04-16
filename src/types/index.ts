@@ -1,3 +1,13 @@
+export interface AppSettingsDoc {
+  $id: string;
+  paystackUrl?: string;
+  flutterwaveUrl?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  isDonationsEnabled: boolean;
+}
+
 export interface Speaker {
   $id: string;
   name: string;
