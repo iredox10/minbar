@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AudioProvider } from './context/AudioContext';
+import { UserProvider } from './context/UserContext';
 import { AdminProvider } from './context/AdminContext';
 import { useAdmin } from './context/AdminContext';
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -131,9 +132,10 @@ function AdminRoutes() {
 
 function App() {
   return (
-    <AudioProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
+    <UserProvider>
+      <AudioProvider>
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Podcasts />} />
@@ -169,6 +171,7 @@ function App() {
         </Suspense>
       </BrowserRouter>
     </AudioProvider>
+  </UserProvider>
   );
 }
 

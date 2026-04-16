@@ -9,6 +9,7 @@ import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 import { DownloadButton } from '../components/audio/DownloadButton';
 import { SupportBanner } from '../components/SupportBanner';
+import { useTranslation } from '../hooks/useTranslation';
 
 import { useAppSettings } from '../hooks/useAppSettings';
 
@@ -34,6 +35,7 @@ export function Podcasts() {
   const [loading, setLoading] = useState(true);
   
   const { play, currentTrack, playerState } = useAudio();
+  const { t } = useTranslation();
 
   const { settings, loading: settingsLoading } = useAppSettings();
 
@@ -116,7 +118,7 @@ export function Podcasts() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors border border-rose-500/20 shadow-lg shadow-rose-500/5 backdrop-blur-md"
               >
                 <Heart size={14} className="fill-rose-400/50" />
-                <span className="text-xs font-semibold tracking-wide">Support Us</span>
+                <span className="text-xs font-semibold tracking-wide">{t('supportUs')}</span>
               </Link>
             </motion.div>
           )}
@@ -133,7 +135,7 @@ export function Podcasts() {
                 <span className="text-gradient">Central</span>
               </h1>
             </div>
-            <p className="text-slate-400 text-lg">Discover knowledge, inspiration & guidance</p>
+            <p className="text-slate-400 text-lg">{t('discoverKnowledge')}</p>
           </motion.div>
 
           {/* Search Bar */}
@@ -148,7 +150,7 @@ export function Podcasts() {
               className="flex items-center w-full pl-12 pr-4 py-4 bg-slate-900/80 border border-slate-700/50 rounded-2xl text-slate-500"
             >
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-              <span>Search episodes, speakers, topics...</span>
+              <span>{t('searchPlaceholder')}</span>
             </Link>
           </motion.div>
         </div>
@@ -158,7 +160,7 @@ export function Podcasts() {
         <div className="px-4 mb-6">
           <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
             <p className="text-sm text-amber-400">
-              Configure Appwrite credentials in .env to load content.
+              {t('configureAppwrite')}
             </p>
           </div>
         </div>
@@ -190,7 +192,7 @@ export function Podcasts() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-6 bg-violet-400 rounded-full" />
-                  <h2 className="text-xl font-bold text-slate-100">Continue Listening</h2>
+                  <h2 className="text-xl font-bold text-slate-100">{t('continueListening')}</h2>
                 </div>
               </div>
               <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
@@ -235,7 +237,7 @@ export function Podcasts() {
                         </div>
                       </div>
                       <p className="text-xs text-slate-200 font-medium line-clamp-2 leading-snug">
-                        {h.title ?? 'Episode'}
+                        {h.title ?? t('episode')}
                       </p>
                       {h.speaker && (
                         <p className="text-[10px] text-slate-500 mt-0.5 truncate">{h.speaker}</p>
@@ -260,10 +262,10 @@ export function Podcasts() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-6 bg-primary rounded-full" />
-                  <h2 className="text-xl font-bold text-slate-100">Featured Speakers</h2>
+                  <h2 className="text-xl font-bold text-slate-100">{t('featuredSpeakers')}</h2>
                 </div>
                 <Link to="/podcasts/speakers" className="text-sm text-primary flex items-center gap-1 hover:text-primary-light transition-colors">
-                  View all <ChevronRight size={16} />
+                  {t('viewAll')} <ChevronRight size={16} />
                 </Link>
               </div>
               
@@ -315,10 +317,10 @@ export function Podcasts() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-6 bg-emerald-400 rounded-full" />
-                  <h2 className="text-xl font-bold text-slate-100">Featured Series</h2>
+                  <h2 className="text-xl font-bold text-slate-100">{t('featuredSeries')}</h2>
                 </div>
                 <Link to="/podcasts/series" className="text-sm text-primary flex items-center gap-1 hover:text-primary-light transition-colors">
-                  View all <ChevronRight size={16} />
+                  {t('viewAll')} <ChevronRight size={16} />
                 </Link>
               </div>
               
@@ -346,12 +348,12 @@ export function Podcasts() {
                             {series.title}
                           </p>
                           <p className="text-xs text-slate-400 mt-1">
-                            {series.episodeCount} episodes
+                            {series.episodeCount} {t('episodes')}
                           </p>
                         </div>
                         {index === 0 && (
                           <div className="absolute top-3 left-3 px-2 py-1 bg-primary/90 rounded-lg text-xs font-medium text-slate-900">
-                            Popular
+                            {t('popular')}
                           </div>
                         )}
                       </div>
@@ -372,10 +374,10 @@ export function Podcasts() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-6 bg-rose-400 rounded-full" />
-                  <h2 className="text-xl font-bold text-slate-100">Latest Episodes</h2>
+                  <h2 className="text-xl font-bold text-slate-100">{t('latestEpisodes')}</h2>
                 </div>
                 <Link to="/podcasts/latest" className="text-sm text-primary flex items-center gap-1 hover:text-primary-light transition-colors">
-                  View all <ChevronRight size={16} />
+                  {t('viewAll')} <ChevronRight size={16} />
                 </Link>
               </div>
               
@@ -459,9 +461,9 @@ export function Podcasts() {
               <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-slate-800/50 flex items-center justify-center">
                 <User className="w-12 h-12 text-slate-600" />
               </div>
-              <p className="text-slate-400 text-lg">No content available yet</p>
+              <p className="text-slate-400 text-lg">{t('noContent')}</p>
               <p className="text-sm text-slate-500 mt-2">
-                Add speakers and episodes in Appwrite
+                {t('addAppwrite')}
               </p>
             </motion.div>
           )}

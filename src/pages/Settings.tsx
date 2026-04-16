@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders, Heart, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Monitor, Timer, Wifi, Download as DownloadIcon, Sparkles, Zap, Sliders, Heart, ChevronRight, UserCircle, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getSettings, updateSettings } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
+import { useUser } from '../context/UserContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { InstallButton } from '../components/InstallButton';
+import { OAuthProvider } from 'appwrite';
 import type { AppSettings } from '../types';
 import { cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../lib/utils';
 
@@ -32,6 +35,8 @@ const defaultSettings: AppSettings = {
 export function Settings() {
   const rawSettings = useLiveQuery(() => getSettings());
   const { playbackSpeed, setPlaybackSpeed, sleepTimerRemaining, setSleepTimer, clearSleepTimer } = useAudio();
+  const { user, login, logout, updateLanguage } = useUser();
+  const { t, lang } = useTranslation();
   const [initialized, setInitialized] = useState(false);
 
   const settings = rawSettings || defaultSettings;
@@ -80,7 +85,7 @@ export function Settings() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 mb-4">
           <Sliders className="w-8 h-8 text-slate-300" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-100">Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-100">{t('settings')}</h1>
         <p className="text-sm text-slate-400 mt-1">Customize your experience</p>
       </motion.div>
 
@@ -90,6 +95,66 @@ export function Settings() {
         animate="show"
         className="space-y-6"
       >
+        {/* Account / User Section */}
+        <motion.section variants={item} className="space-y-3">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('account')}</h2>
+          <div className="glass-card rounded-2xl p-4">
+            {user ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/20">
+                    <UserCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-200">{user.name}</p>
+                    <p className="text-xs text-slate-400">{user.email}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={logout}
+                  className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center py-2">
+                <UserCircle className="w-12 h-12 text-slate-500 mb-3" />
+                <p className="text-sm text-slate-300 mb-4">Sync your history, favorites, and playlists across devices.</p>
+                <button
+                  onClick={() => login(OAuthProvider.Google)}
+                  className="px-6 py-2.5 rounded-xl bg-primary text-slate-900 font-medium hover:bg-primary-light transition-colors w-full"
+                >
+                  Continue with Google
+                </button>
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* Language */}
+        <motion.section variants={item} className="space-y-3">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('language')}</h2>
+          <div className="glass-card rounded-2xl p-4 flex gap-2">
+            {[
+              { id: 'en', label: 'English' },
+              { id: 'ha', label: 'Hausa' }
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => updateLanguage(id as 'en' | 'ha')}
+                className={cn(
+                  "flex-1 py-3 rounded-xl text-sm font-medium transition-all",
+                  lang === id 
+                    ? "bg-primary text-slate-900 shadow-lg shadow-primary/30"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </motion.section>
         {/* Install PWA */}
         <motion.section variants={item}>
           <InstallButton />

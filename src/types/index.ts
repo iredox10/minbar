@@ -146,6 +146,16 @@ export type PlayerState = 'idle' | 'loading' | 'playing' | 'paused';
 
 export type RepeatMode = 'off' | 'one' | 'all';
 
+export interface User {
+  $id: string;
+  name: string;
+  email: string;
+  prefs?: {
+    language?: 'en' | 'ha';
+    following?: string[]; // Array of speaker IDs
+  };
+}
+
 export interface CurrentTrack {
   id: string;
   title: string;

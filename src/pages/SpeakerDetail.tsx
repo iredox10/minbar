@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Play, Clock, Music } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, Clock, Music, UserPlus, UserCheck } from 'lucide-react';
 import { getSpeakerBySlug, getSeriesBySpeaker, getStandaloneEpisodesBySpeaker, isAppwriteConfigured } from '../lib/appwrite';
 import { useAudio } from '../context/AudioContext';
+import { useUser } from '../context/UserContext';
 import type { Speaker, Series, Episode, CurrentTrack } from '../types';
 import { formatDuration, cn } from '../lib/utils';
 
@@ -28,6 +29,9 @@ export function SpeakerDetail() {
   const [loading, setLoading] = useState(true);
   
   const { play, currentTrack, playerState } = useAudio();
+  const { user, toggleFollow } = useUser();
+
+  const isFollowing = user?.prefs?.following?.includes(speaker?.$id || '');
 
   useEffect(() => {
     async function loadSpeaker() {
@@ -134,6 +138,24 @@ export function SpeakerDetail() {
             </div>
             
             <h1 className="text-2xl font-bold text-slate-100 mb-2">{speaker.name}</h1>
+            
+            {user && (
+              <button
+                onClick={() => toggleFollow(speaker.$id)}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-4 transition-colors",
+                  isFollowing
+                    ? "bg-slate-800 text-primary border border-primary/30 hover:bg-slate-700"
+                    : "bg-primary text-slate-900 hover:bg-primary-light"
+                )}
+              >
+                {isFollowing ? (
+                  <><UserCheck size={16} /> Following</>
+                ) : (
+                  <><UserPlus size={16} /> Follow</>
+                )}
+              </button>
+            )}
             
             {speaker.bio && (
               <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">

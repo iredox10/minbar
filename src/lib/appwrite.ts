@@ -1,4 +1,4 @@
-import { Client, Databases, Storage, Query } from 'appwrite';
+import { Client, Databases, Storage, Query, Account } from 'appwrite';
 import type { Speaker, Series, Episode, Dua, RadioStation, AppSettingsDoc } from '../types';
 
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
@@ -13,6 +13,7 @@ export const appwriteClient = new Client()
 
 export const databases = new Databases(appwriteClient);
 export const storage = new Storage(appwriteClient);
+export const account = new Account(appwriteClient);
 
 export { DATABASE_ID, IMAGES_BUCKET, AUDIO_BUCKET };
 

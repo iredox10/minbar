@@ -14,6 +14,8 @@ import {
   Bookmark,
 } from 'lucide-react';
 import { SupportBanner } from '../components/SupportBanner';
+import { useTranslation } from '../hooks/useTranslation';
+import type { TranslationKey } from '../lib/i18n';
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,50 +31,50 @@ const item = {
 };
 
 interface LibrarySection {
-  label: string;
-  description: string;
+  labelKey: TranslationKey;
+  descKey: TranslationKey;
   path: string;
   icon: React.ElementType;
-  accent: string;       // Tailwind bg colour class for the icon well
-  iconColor: string;    // Tailwind text colour class
+  accent: string;
+  iconColor: string;
 }
 
 const PRIMARY_SECTIONS: LibrarySection[] = [
   {
-    label: 'Speakers',
-    description: 'Browse all scholars & lecturers',
+    labelKey: 'speakers',
+    descKey: 'speakersDesc',
     path: '/podcasts/speakers',
     icon: Users,
     accent: 'bg-primary/15',
     iconColor: 'text-primary',
   },
   {
-    label: 'Series',
-    description: 'Full lecture series & courses',
+    labelKey: 'series',
+    descKey: 'seriesDesc',
     path: '/podcasts/series',
     icon: BookOpen,
     accent: 'bg-emerald-500/15',
     iconColor: 'text-emerald-400',
   },
   {
-    label: 'Live Radio',
-    description: 'Stream Islamic radio stations',
+    labelKey: 'liveRadio',
+    descKey: 'liveRadioDesc',
     path: '/radio',
     icon: Radio,
     accent: 'bg-rose-500/15',
     iconColor: 'text-rose-400',
   },
   {
-    label: 'Duas',
-    description: 'Prophetic & Quranic supplications',
+    labelKey: 'duas',
+    descKey: 'duasDesc',
     path: '/duas',
     icon: BookOpen,
     accent: 'bg-amber-500/15',
     iconColor: 'text-amber-400',
   },
   {
-    label: 'Latest Episodes',
-    description: 'Newly published lectures',
+    labelKey: 'latestEpisodes',
+    descKey: 'latestEpisodesDesc',
     path: '/podcasts/latest',
     icon: Clock,
     accent: 'bg-violet-500/15',
@@ -82,40 +84,40 @@ const PRIMARY_SECTIONS: LibrarySection[] = [
 
 const PERSONAL_SECTIONS: LibrarySection[] = [
   {
-    label: 'Favorites',
-    description: 'Episodes & series you saved',
+    labelKey: 'favorites',
+    descKey: 'favoritesDesc',
     path: '/favorites',
     icon: Heart,
     accent: 'bg-rose-500/15',
     iconColor: 'text-rose-400',
   },
   {
-    label: 'Downloads',
-    description: 'Available offline',
+    labelKey: 'downloads',
+    descKey: 'downloadsDesc',
     path: '/downloads',
     icon: Download,
     accent: 'bg-sky-500/15',
     iconColor: 'text-sky-400',
   },
   {
-    label: 'Playlists',
-    description: 'Your custom queues',
+    labelKey: 'playlists',
+    descKey: 'playlistsDesc',
     path: '/playlists',
     icon: ListMusic,
     accent: 'bg-indigo-500/15',
     iconColor: 'text-indigo-400',
   },
   {
-    label: 'History',
-    description: 'Recently played',
+    labelKey: 'history',
+    descKey: 'historyDesc',
     path: '/history',
     icon: History,
     accent: 'bg-slate-500/15',
     iconColor: 'text-slate-400',
   },
   {
-    label: 'Bookmarks',
-    description: 'Saved positions in episodes',
+    labelKey: 'bookmarks',
+    descKey: 'bookmarksDesc',
     path: '/bookmarks',
     icon: Bookmark,
     accent: 'bg-primary/15',
@@ -124,6 +126,7 @@ const PERSONAL_SECTIONS: LibrarySection[] = [
 ];
 
 function SectionRow({ section }: { section: LibrarySection }) {
+  const { t } = useTranslation();
   const Icon = section.icon;
   return (
     <motion.div variants={item} whileTap={{ scale: 0.98 }}>
@@ -136,9 +139,9 @@ function SectionRow({ section }: { section: LibrarySection }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-100 group-hover:text-primary transition-colors">
-            {section.label}
+            {t(section.labelKey)}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">{section.description}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t(section.descKey)}</p>
         </div>
         <ChevronRight size={18} className="text-slate-600 group-hover:text-primary transition-colors flex-shrink-0" />
       </Link>
@@ -147,6 +150,7 @@ function SectionRow({ section }: { section: LibrarySection }) {
 }
 
 export function Library() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -163,8 +167,8 @@ export function Library() {
               <LibraryIcon size={20} className="text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-100">Library</h1>
-              <p className="text-xs text-slate-500">All content, all in one place</p>
+              <h1 className="text-2xl font-bold text-slate-100">{t('library')}</h1>
+              <p className="text-xs text-slate-500">{t('allContent')}</p>
             </div>
           </motion.div>
         </div>
@@ -175,7 +179,7 @@ export function Library() {
         <motion.section variants={container} initial="hidden" animate="show">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-1 h-5 bg-primary rounded-full" />
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Explore</h2>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{t('explore')}</h2>
           </div>
           <div className="space-y-3">
             {PRIMARY_SECTIONS.map((s) => (
@@ -188,7 +192,7 @@ export function Library() {
         <motion.section variants={container} initial="hidden" animate="show">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-1 h-5 bg-emerald-400 rounded-full" />
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">My Library</h2>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{t('myLibrary')}</h2>
           </div>
           <div className="space-y-3">
             {PERSONAL_SECTIONS.map((s) => (
