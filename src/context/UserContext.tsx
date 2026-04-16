@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { account } from '../lib/appwrite';
 import { OAuthProvider } from 'appwrite';
+import { syncUserData } from '../lib/sync';
 import type { User } from '../types';
 
 interface UserContextType {
@@ -33,6 +34,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const session = await account.get();
       const prefs = await account.getPrefs();
       setUser({ ...session, prefs } as User);
+      
+      // Perform background sync
+      syncUserData(session.$id).catch(console.error);
     } catch {
       setUser(null);
     } finally {

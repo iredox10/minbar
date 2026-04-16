@@ -25,6 +25,11 @@ export const RADIO_COLLECTION = 'radio_stations';
 export const USER_PLAYBACK_COLLECTION = 'user_playback';
 export const APP_SETTINGS_COLLECTION = 'app_settings';
 
+export const USER_FAVORITES_COLLECTION = 'user_favorites';
+export const USER_HISTORY_COLLECTION = 'user_history';
+export const USER_PLAYLISTS_COLLECTION = 'user_playlists';
+export const USER_PLAYLIST_ITEMS_COLLECTION = 'user_playlist_items';
+
 export function isAppwriteConfigured(): boolean {
   return !!APPWRITE_PROJECT_ID;
 }
