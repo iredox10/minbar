@@ -5,6 +5,7 @@ import { Save, ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
 import { adminDatabases, uploadAudio, createEpisode, updateEpisode, EPISODES_COLLECTION, SERIES_COLLECTION, SPEAKERS_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import type { Episode, Series, Speaker } from '../../types';
 import { cn, slugify } from '../../lib/utils';
+import { TagsInput } from '../../components/admin/TagsInput';
 
 function formatDurationAuto(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -36,6 +37,7 @@ export function AdminEpisodeForm() {
     publishedAt: '',
     description: '',
     episodeNumber: 1,
+    tags: [] as string[],
     isStandalone: false
   });
 
@@ -80,6 +82,7 @@ export function AdminEpisodeForm() {
         publishedAt: episode.publishedAt ? episode.publishedAt.split('T')[0] : '',
         description: episode.description || '',
         episodeNumber: episode.episodeNumber || 1,
+        tags: episode.tags || [],
         isStandalone: episode.isStandalone || false
       });
       setContentType(episode.isStandalone ? 'standalone' : 'series');
@@ -299,6 +302,16 @@ export function AdminEpisodeForm() {
           <div>
             <label className="block text-sm text-slate-400 mb-2">Description</label>
             <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={4} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none" placeholder="Audio description..." />
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Tags</label>
+            <TagsInput 
+              tags={formData.tags} 
+              onChange={(tags) => setFormData(prev => ({ ...prev, tags }))} 
+              placeholder="Add tags (e.g. Ramadan, Tafseer)..." 
+            />
+            <p className="text-xs text-slate-500 mt-2">Press enter or comma to add a tag. Used for categorization and search.</p>
           </div>
 
           <div>

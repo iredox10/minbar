@@ -5,6 +5,7 @@ import { Save, ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
 import { adminDatabases, uploadImage, createSeries, updateSeries, SERIES_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import type { Series, Speaker } from '../../types';
 import { cn, slugify } from '../../lib/utils';
+import { TagsInput } from '../../components/admin/TagsInput';
 
 export function AdminSeriesForm() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export function AdminSeriesForm() {
     description: '',
     artworkUrl: '',
     category: '',
+    tags: [] as string[],
     episodeCount: 0
   });
 
@@ -51,6 +53,7 @@ export function AdminSeriesForm() {
         description: series.description || '',
         artworkUrl: series.artworkUrl,
         category: series.category || '',
+        tags: series.tags || [],
         episodeCount: series.episodeCount
       });
     } catch (error) {
@@ -99,6 +102,7 @@ export function AdminSeriesForm() {
           description: formData.description,
           artworkUrl: formData.artworkUrl,
           category: formData.category,
+          tags: formData.tags,
           episodeCount: formData.episodeCount
         });
       }
@@ -185,6 +189,16 @@ export function AdminSeriesForm() {
           <div>
             <label className="block text-sm text-slate-400 mb-2">Description</label>
             <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none" placeholder="Series description..." />
+          </div>
+          
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Tags</label>
+            <TagsInput 
+              tags={formData.tags} 
+              onChange={(tags) => setFormData(prev => ({ ...prev, tags }))} 
+              placeholder="Add tags (e.g. Marriage, Youth)..." 
+            />
+            <p className="text-xs text-slate-500 mt-2">Press enter or comma to add a tag. Used for categorization and search.</p>
           </div>
         </div>
 

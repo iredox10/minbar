@@ -45,7 +45,12 @@ export function AdminResetPassword() {
 
     setStatus('loading');
     try {
-      await adminAccount.updateRecovery(userId, secret, password, confirmPassword);
+      await adminAccount.updateRecovery({
+        userId, 
+        secret, 
+        password, 
+        passwordAgain: confirmPassword
+      } as any);
       setStatus('success');
       setMessage('Password has been successfully reset! Redirecting to login...');
       setTimeout(() => {

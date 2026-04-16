@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Clock, Download, Heart, Share2 } from 'lucide-react';
-import { getSeriesById, getEpisodesBySeries, isAppwriteConfigured } from '../lib/appwrite';
+import { getSeriesById, getEpisodesBySeries, getRelatedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
 import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
@@ -26,6 +26,7 @@ export function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
   const [series, setSeries] = useState<Series | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [relatedSeries, setRelatedSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFav, setIsFav] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
@@ -50,6 +51,10 @@ export function SeriesDetail() {
         if (seriesData) {
           const fav = await isFavorite('series', seriesData.$id);
           setIsFav(fav);
+          
+          if (seriesData.tags && seriesData.tags.length > 0) {
+            getRelatedSeries(seriesData.tags, seriesData.$id).then(setRelatedSeries);
+          }
         }
 
         const downloaded = new Set<string>();
@@ -274,6 +279,7 @@ export function SeriesDetail() {
             variants={container}
             initial="hidden"
             animate="show"
+            className="mb-8"
           >
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Episodes</h2>
 
@@ -350,6 +356,34 @@ export function SeriesDetail() {
             <Play className="w-12 h-12 text-slate-600 mx-auto mb-4" />
             <p className="text-slate-400">No episodes available yet</p>
           </div>
+        )}
+
+        {relatedSeries.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">Related Series</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {relatedSeries.map(s => (
+                <Link
+                  key={s.$id}
+                  to={`/series/${s.$id}`}
+                  className="glass-card p-3 rounded-2xl group hover:bg-slate-800/70 transition-colors"
+                >
+                  <div className="aspect-square rounded-xl overflow-hidden mb-3">
+                    <img
+                      src={s.artworkUrl}
+                      alt={s.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <h3 className="font-semibold text-slate-200 text-sm truncate">{s.title}</h3>
+                </Link>
+              ))}
+            </div>
+          </motion.section>
         )}
       </div>
     </div>

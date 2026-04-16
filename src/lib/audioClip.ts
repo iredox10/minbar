@@ -155,9 +155,9 @@ export function buildShareCaption(opts: {
   speaker?: string;
   startSec: number;
   durationSec: number;
+  episodeId?: string;
 }): string {
-  const { title, speaker, startSec, durationSec } = opts;
-  const appUrl = window.location.origin;
+  const { title, speaker, startSec, durationSec, episodeId } = opts;
   const mins = Math.floor(startSec / 60);
   const secs = Math.floor(startSec % 60);
   const timestamp = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -170,7 +170,13 @@ export function buildShareCaption(opts: {
   lines.push(`🕐 Clip from ${timestamp} (${Math.round(durationSec)}s)`);
   lines.push('');
   lines.push(`🔗 Listen free on Arewa Central:`);
-  lines.push(appUrl);
+  
+  if (episodeId) {
+    lines.push(`${window.location.origin}/podcasts/episode/${episodeId}?t=${Math.floor(startSec)}`);
+  } else {
+    lines.push(window.location.origin);
+  }
+  
   lines.push('');
   lines.push('Free Islamic Podcasts, Duas & more.');
   lines.push('No Ads. No Tracking. Your Daily Muslim Companion.');

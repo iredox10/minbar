@@ -148,6 +148,7 @@ async function setup() {
     { type: 'string', key: 'artworkUrl', size: 500, required: true },
     { type: 'string', key: 'category', size: 100, required: false },
     { type: 'integer', key: 'episodeCount', required: false, default: 0 },
+    { type: 'string', key: 'tags', size: 100, required: false, array: true },
     { type: 'datetime', key: 'createdAt', required: false }
   ]);
   await createIndexes('series', [
@@ -164,7 +165,8 @@ async function setup() {
     { type: 'integer', key: 'duration', required: true },
     { type: 'datetime', key: 'publishedAt', required: false },
     { type: 'string', key: 'description', size: 5000, required: false },
-    { type: 'integer', key: 'episodeNumber', required: false, default: 1 }
+    { type: 'integer', key: 'episodeNumber', required: false, default: 1 },
+    { type: 'string', key: 'tags', size: 100, required: false, array: true }
   ]);
   await createIndexes('episodes', [
     { key: 'slug_index', type: 'unique', attributes: ['slug'] },

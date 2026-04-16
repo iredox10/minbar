@@ -26,6 +26,7 @@ export interface Series {
   description: string;
   artworkUrl: string;
   category: string;
+  tags?: string[];
   episodeCount: number;
   createdAt: string;
 }
@@ -41,6 +42,7 @@ export interface Episode {
   publishedAt: string;
   description: string;
   episodeNumber: number;
+  tags?: string[];
   isStandalone?: boolean;
 }
 

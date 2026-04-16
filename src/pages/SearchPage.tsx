@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, Clock, User, BookOpen, X, TrendingUp } from 'lucide-react';
+import { Search, Play, Clock, User, BookOpen, X, TrendingUp, Tag } from 'lucide-react';
 import { searchEpisodes, searchSpeakers, searchSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { trackSearch } from '../lib/analytics';
 import type { Episode, Speaker, Series, CurrentTrack } from '../types';
@@ -127,6 +127,11 @@ export function SearchPage() {
     { id: 'series', label: 'Series', count: series.length }
   ];
 
+  const POPULAR_TOPICS = [
+    'Tafsir', 'Sira', 'Hadisi', 'Fikihu', 'Aure', 
+    'Matasa', 'Sallah', 'Ramadan', 'Tauhid'
+  ];
+
   return (
     <div className="min-h-screen">
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50">
@@ -175,36 +180,62 @@ export function SearchPage() {
       </div>
 
       <div className="p-4 pb-24">
-        {!query.trim() && recentSearches.length > 0 && (
-          <motion.section
+        {!query.trim() && (
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-slate-500" />
-                <h2 className="text-sm font-medium text-slate-400">Recent Searches</h2>
+            {recentSearches.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-slate-500" />
+                    <h2 className="text-sm font-medium text-slate-400">Recent Searches</h2>
+                  </div>
+                  <button
+                    onClick={clearRecentSearches}
+                    className="text-xs text-slate-500 hover:text-primary transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((search, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleRecentClick(search)}
+                      className="px-4 py-2 bg-slate-800/50 rounded-full text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all"
+                    >
+                      {search}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Tag size={16} className="text-primary" />
+                <h2 className="text-sm font-medium text-slate-400">Browse Topics</h2>
               </div>
-              <button
-                onClick={clearRecentSearches}
-                className="text-xs text-slate-500 hover:text-primary transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {recentSearches.map((search, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleRecentClick(search)}
-                  className="px-4 py-2 bg-slate-800/50 rounded-full text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all"
-                >
-                  {search}
-                </button>
-              ))}
-            </div>
-          </motion.section>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {POPULAR_TOPICS.map((topic) => (
+                  <button
+                    key={topic}
+                    onClick={() => handleRecentClick(topic)}
+                    className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl text-left hover:bg-slate-700/50 hover:border-primary/50 transition-all group"
+                  >
+                    <span className="block font-medium text-slate-300 group-hover:text-primary transition-colors">
+                      {topic}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </motion.div>
         )}
 
         {loading ? (

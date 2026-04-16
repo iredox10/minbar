@@ -77,6 +77,30 @@ export async function getSeriesById(seriesId: string): Promise<Series | null> {
   }
 }
 
+export async function getRelatedSeries(tags: string[], excludeId?: string, limit: number = 5): Promise<Series[]> {
+  if (!isAppwriteConfigured() || !tags || tags.length === 0) return [];
+  
+  try {
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      SERIES_COLLECTION,
+      [
+        Query.contains('tags', tags),
+        Query.limit(limit + (excludeId ? 1 : 0))
+      ]
+    );
+    
+    let docs = response.documents as unknown as Series[];
+    if (excludeId) {
+      docs = docs.filter(doc => doc.$id !== excludeId);
+    }
+    return docs.slice(0, limit);
+  } catch (error) {
+    console.error('Failed to fetch related series:', error);
+    return [];
+  }
+}
+
 export async function getLatestEpisodes(limit: number = 20): Promise<Episode[]> {
   if (!isAppwriteConfigured()) return [];
   const response = await databases.listDocuments(
@@ -135,6 +159,30 @@ export async function getEpisodesBySeries(seriesId: string): Promise<Episode[]> 
     [Query.equal('seriesId', seriesId), Query.orderAsc('episodeNumber')]
   );
   return response.documents as unknown as Episode[];
+}
+
+export async function getRelatedEpisodes(tags: string[], excludeId?: string, limit: number = 5): Promise<Episode[]> {
+  if (!isAppwriteConfigured() || !tags || tags.length === 0) return [];
+  
+  try {
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      EPISODES_COLLECTION,
+      [
+        Query.contains('tags', tags),
+        Query.limit(limit + (excludeId ? 1 : 0))
+      ]
+    );
+    
+    let docs = response.documents as unknown as Episode[];
+    if (excludeId) {
+      docs = docs.filter(doc => doc.$id !== excludeId);
+    }
+    return docs.slice(0, limit);
+  } catch (error) {
+    console.error('Failed to fetch related episodes:', error);
+    return [];
+  }
 }
 
 export async function getStandaloneEpisodesBySpeaker(speakerId: string): Promise<Episode[]> {

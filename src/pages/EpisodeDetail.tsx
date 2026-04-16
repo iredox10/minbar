@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, SkipBack, SkipForward, 
@@ -7,7 +7,7 @@ import {
   Clock, Calendar, ListPlus, X, SkipForward as NextIcon,
   Music2,
 } from 'lucide-react';
-import { getEpisodeById, getSeriesById, getEpisodesBySeries, isAppwriteConfigured } from '../lib/appwrite';
+import { getEpisodeById, getSeriesById, getEpisodesBySeries, getRelatedEpisodes, isAppwriteConfigured } from '../lib/appwrite';
 import { getPlaybackHistory, isFavorite, addFavorite, removeFavorite, getPlaylists, addToPlaylist } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
 import { useDownloads } from '../hooks/useDownloads';
@@ -18,10 +18,13 @@ import { toast } from 'sonner';
 export function EpisodeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const startAt = parseInt(searchParams.get('t') || '0', 10);
   
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [series, setSeries] = useState<Series | null>(null);
   const [seriesEpisodes, setSeriesEpisodes] = useState<Episode[]>([]);
+  const [relatedEpisodes, setRelatedEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorited, setFavorited] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -50,6 +53,10 @@ export function EpisodeDetail() {
         if (episodeData) {
           setEpisode(episodeData);
           
+          if (episodeData.tags && episodeData.tags.length > 0) {
+            getRelatedEpisodes(episodeData.tags, episodeData.$id).then(setRelatedEpisodes);
+          }
+
           if (episodeData.seriesId) {
             const [seriesData, episodes] = await Promise.all([
               getSeriesById(episodeData.seriesId),
@@ -71,7 +78,11 @@ export function EpisodeDetail() {
           }
 
           const history = await getPlaybackHistory(id);
-          if (history?.position) setSavedPosition(history.position);
+          if (startAt > 0) {
+            setSavedPosition(startAt);
+          } else if (history?.position) {
+            setSavedPosition(history.position);
+          }
         }
       } catch (error) {
         console.error('Failed to load episode:', error);
@@ -83,7 +94,7 @@ export function EpisodeDetail() {
     loadData();
   }, [id, checkDownloaded, getLocalUrl]);
 
-  const handlePlay = async () => {
+  const handlePlay = async (startSeconds?: number) => {
     if (!episode) return;
     
     const audioToUse = localUrl || episode.audioUrl;
@@ -98,7 +109,7 @@ export function EpisodeDetail() {
       type: 'episode'
     };
     
-    play(track, savedPosition);
+    play(track, startSeconds ?? savedPosition);
   };
 
   const handlePlayEpisode = async (ep: Episode) => {
@@ -193,10 +204,56 @@ export function EpisodeDetail() {
   const isCurrentEpisode = currentTrack?.id === id;
 
   // Next episode in the series (by episodeNumber or array order)
+  // Next episode in the series (by episodeNumber or array order)
   const currentEpNumber = episode?.episodeNumber ?? 0;
   const nextEpisode = seriesEpisodes
     .filter(e => (e.episodeNumber ?? 0) > currentEpNumber)
     .sort((a, b) => (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0))[0] ?? null;
+
+  const renderDescription = (text: string) => {
+    const regex = /(\d{1,2}:\d{2}(?::\d{2})?)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      const timeStr = match[0];
+      const timeParts = timeStr.split(':').map(Number);
+      let seconds = 0;
+      if (timeParts.length === 3) {
+        seconds = timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+      } else {
+        seconds = timeParts[0] * 60 + timeParts[1];
+      }
+
+      parts.push(
+        <button
+          key={match.index}
+          onClick={() => {
+            if (isCurrentEpisode) {
+              seek(seconds);
+            } else {
+              setSavedPosition(seconds);
+              handlePlay(seconds);
+            }
+          }}
+          className="text-primary hover:underline font-mono bg-primary/10 px-1 rounded mx-0.5"
+        >
+          {timeStr}
+        </button>
+      );
+      lastIndex = regex.lastIndex;
+    }
+    
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    return parts.length > 0 ? parts : text;
+  };
 
   if (loading) {
     return (
@@ -226,6 +283,8 @@ export function EpisodeDetail() {
       </div>
     );
   }
+
+  const filteredRelated = relatedEpisodes.filter(re => !seriesEpisodes.some(se => se.$id === re.$id));
 
   return (
     <div className="min-h-screen bg-slate-900 pb-32">
@@ -486,9 +545,9 @@ export function EpisodeDetail() {
             className="glass-card rounded-xl p-4 mb-4"
           >
             <h2 className="font-semibold text-slate-200 mb-2">About this episode</h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              {episode.description}
-            </p>
+            <div className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+              {renderDescription(episode.description)}
+            </div>
           </motion.div>
         )}
 
@@ -498,7 +557,7 @@ export function EpisodeDetail() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="glass-card rounded-xl p-4"
+            className="glass-card rounded-xl p-4 mb-4"
           >
             <h2 className="font-semibold text-slate-200 mb-3">More from this series</h2>
             <div className="space-y-2">
@@ -518,6 +577,49 @@ export function EpisodeDetail() {
                     currentTrack?.id === ep.$id ? 'bg-primary text-slate-900' : 'bg-slate-700/80 text-slate-400',
                   )}>
                     {ep.episodeNumber || <Play size={12} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-sm truncate',
+                      currentTrack?.id === ep.$id ? 'text-primary font-medium' : 'text-slate-300 group-hover:text-white',
+                    )}>
+                      {ep.title}
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-mono">{formatDuration(ep.duration)}</p>
+                  </div>
+                  <Play size={13} className="text-slate-600 group-hover:text-primary transition-colors flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Related Content by tags */}
+        {filteredRelated.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="glass-card rounded-xl p-4"
+          >
+            <h2 className="font-semibold text-slate-200 mb-3">Related Content</h2>
+            <div className="space-y-2">
+              {filteredRelated.map(ep => (
+                <button
+                  key={ep.$id}
+                  onClick={() => navigate(`/episode/${ep.$id}`)}
+                  className={cn(
+                    'w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left group',
+                    currentTrack?.id === ep.$id
+                      ? 'bg-primary/15 ring-1 ring-primary/30'
+                      : 'hover:bg-slate-800/70',
+                  )}
+                >
+                  <div className={cn(
+                    'w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold',
+                    currentTrack?.id === ep.$id ? 'bg-primary text-slate-900' : 'bg-slate-700/80 text-slate-400',
+                  )}>
+                    <Play size={12} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn(

@@ -46,6 +46,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
     speaker: track.speaker,
     startSec,
     durationSec: displayClipDuration,
+    episodeId: track.type === 'episode' ? track.id : undefined,
   });
 
   // Clean up preview audio URL on unmount
@@ -120,6 +121,28 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
     audio.onerror = () => setIsPreviewing(false);
   }, [isPreviewing]);
 
+  const handleDownload = useCallback(() => {
+    if (!clipBlob) return;
+    const url = URL.createObjectURL(clipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = clipFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast.success('Clip downloaded');
+  }, [clipBlob, clipFilename]);
+
+  const handleCopyCaption = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(caption);
+      toast.success('Caption copied to clipboard');
+    } catch {
+      toast.error('Could not copy to clipboard');
+    }
+  }, [caption]);
+
   const handleShare = useCallback(async () => {
     if (!clipBlob) return;
 
@@ -156,29 +179,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
     // Desktop fallback: download WAV + copy text
     handleDownload();
     await handleCopyCaption();
-  }, [clipBlob, clipFilename, caption, track.title]);
-
-  const handleDownload = useCallback(() => {
-    if (!clipBlob) return;
-    const url = URL.createObjectURL(clipBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = clipFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast.success('Clip downloaded');
-  }, [clipBlob, clipFilename]);
-
-  const handleCopyCaption = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(caption);
-      toast.success('Caption copied to clipboard');
-    } catch {
-      toast.error('Could not copy to clipboard');
-    }
-  }, [caption]);
+  }, [clipBlob, clipFilename, caption, track.title, handleDownload, handleCopyCaption]);
 
   const isRadio = track.type === 'radio';
   const noAudio = !track.audioUrl;
