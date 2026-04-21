@@ -12,6 +12,7 @@ import { getBookmarks, deleteBookmark } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
 import type { Bookmark } from '../types';
 import { formatDuration, cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -26,20 +27,21 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-function formatTimeAgo(date: Date): string {
+function formatTimeAgo(date: Date, t: any): string {
   const now = Date.now();
   const diff = now - new Date(date).getTime();
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(mins / 60);
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (mins > 0) return `${mins}m ago`;
-  return 'just now';
+  if (days > 0) return `${days} ${t('daysAgoText')}`;
+  if (hours > 0) return `${hours} ${t('hoursAgoText')}`;
+  if (mins > 0) return `${mins} ${t('minsAgoText')}`;
+  return t('justNowTime');
 }
 
 export function Bookmarks() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { play, currentTrack } = useAudio();
 
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -105,11 +107,11 @@ export function Bookmarks() {
               <BookmarkIcon size={20} className="text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-100">Bookmarks</h1>
+              <h1 className="text-2xl font-bold text-slate-100">{t('bookmarksTitle')}</h1>
               <p className="text-xs text-slate-500">
                 {bookmarks.length === 0
-                  ? 'No bookmarks yet'
-                  : `${bookmarks.length} saved position${bookmarks.length !== 1 ? 's' : ''}`}
+                  ? t('noBookmarksYetText')
+                  : `${bookmarks.length} ${bookmarks.length !== 1 ? t('savedPositions') : t('savedPosition')}`}
               </p>
             </div>
           </motion.div>
@@ -132,9 +134,9 @@ export function Bookmarks() {
             <div className="w-20 h-20 rounded-full bg-slate-800/70 flex items-center justify-center mb-5">
               <BookmarkIcon size={32} className="text-slate-600" />
             </div>
-            <p className="text-slate-300 font-semibold text-lg mb-2">No bookmarks yet</p>
+            <p className="text-slate-300 font-semibold text-lg mb-2">{t('noBookmarksYetText')}</p>
             <p className="text-slate-500 text-sm max-w-xs">
-              Tap the bookmark icon in the player to save your position in any episode.
+              {t('tapBookmarkDesc')}
             </p>
           </motion.div>
         ) : (
@@ -176,7 +178,7 @@ export function Bookmarks() {
                       )}
                     </div>
                     <span className="text-[11px] text-slate-600 flex-shrink-0">
-                      {bms.length} mark{bms.length !== 1 ? 's' : ''}
+                      {bms.length} {bms.length !== 1 ? t('marksPlural') : t('markSingle')}
                     </span>
                   </div>
 
@@ -206,10 +208,10 @@ export function Bookmarks() {
                             {bm.note ? (
                               <p className="text-sm text-slate-200 truncate font-medium">{bm.note}</p>
                             ) : (
-                              <p className="text-sm text-slate-400 italic truncate">No note</p>
+                              <p className="text-sm text-slate-400 italic truncate">{t('noNoteText')}</p>
                             )}
                             <p className="text-[11px] text-slate-600 mt-0.5">
-                              {formatTimeAgo(bm.createdAt)}
+                              {formatTimeAgo(bm.createdAt, t)}
                             </p>
                           </div>
 

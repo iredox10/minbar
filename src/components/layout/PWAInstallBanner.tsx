@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, Share, Plus, Download } from 'lucide-react';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const DISMISSED_KEY = 'pwa_banner_dismissed_v1';
 
@@ -28,6 +29,7 @@ function isSafari(): boolean {
 
 /** iOS-specific "Add to Home Screen" instruction sheet */
 function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -55,8 +57,8 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
             <Smartphone size={22} className="text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-100">Add to Home Screen</h3>
-            <p className="text-xs text-slate-400">Install Arewa Central as an app</p>
+            <h3 className="font-semibold text-slate-100">{t('addToHomeScreen')}</h3>
+            <p className="text-xs text-slate-400">{t('installArewaCentralAsApp')}</p>
           </div>
         </div>
 
@@ -67,11 +69,11 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <p className="text-sm text-slate-200">
-                Tap the <strong className="text-slate-100">Share</strong> button in Safari's toolbar
+                {t('tapThe')} <strong className="text-slate-100">{t('share')}</strong> {t('buttonInSafariToolbar')}
               </p>
               <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 text-xs">
                 <Share size={13} />
-                <span>Share</span>
+                <span>{t('share')}</span>
               </div>
             </div>
           </li>
@@ -82,11 +84,11 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <p className="text-sm text-slate-200">
-                Scroll down and tap <strong className="text-slate-100">Add to Home Screen</strong>
+                {t('scrollDownAndTap')} <strong className="text-slate-100">{t('addToHomeScreen')}</strong>
               </p>
               <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 text-xs">
                 <Plus size={13} />
-                <span>Add to Home Screen</span>
+                <span>{t('addToHomeScreen')}</span>
               </div>
             </div>
           </li>
@@ -96,7 +98,7 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
               3
             </div>
             <p className="text-sm text-slate-200 pt-0.5">
-              Tap <strong className="text-slate-100">Add</strong> in the top-right corner
+              {t('tap')} <strong className="text-slate-100">{t('add')}</strong> {t('inTopRightCorner')}
             </p>
           </li>
         </ol>
@@ -105,7 +107,7 @@ function IOSInstructionSheet({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className="w-full py-3.5 rounded-2xl bg-primary text-slate-900 font-semibold text-sm"
         >
-          Got it
+          {t('gotIt')}
         </button>
       </motion.div>
     </motion.div>
@@ -119,6 +121,7 @@ export function PWAInstallBanner() {
   );
   const [showIOSSheet, setShowIOSSheet] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const { t } = useTranslation();
 
   // Hide once the app is installed mid-session
   useEffect(() => {
@@ -165,10 +168,10 @@ export function PWAInstallBanner() {
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-100 leading-tight">
-                    Install Arewa Central
+                    {t('installArewaCentral')}
                   </p>
                   <p className="text-xs text-slate-400 truncate">
-                    Free Islamic Podcasts &amp; Duas — No Ads
+                    {t('freeIslamicPodcasts')}
                   </p>
                 </div>
 
@@ -181,7 +184,7 @@ export function PWAInstallBanner() {
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-slate-900 text-xs font-bold flex-shrink-0 shadow-md shadow-primary/30 disabled:opacity-60"
                 >
                   <Download size={13} className={installing ? 'animate-bounce' : ''} />
-                  {installing ? 'Installing…' : isIOS() ? 'How to' : 'Install'}
+                  {installing ? t('installingApp') : isIOS() ? t('howTo') : t('install')}
                 </motion.button>
 
                 {/* Dismiss */}

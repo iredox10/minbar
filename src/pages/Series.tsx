@@ -5,8 +5,10 @@ import { Search, BookOpen, ArrowLeft, Play } from 'lucide-react';
 import { getAllSeries, isAppwriteConfigured } from '../lib/appwrite';
 import type { Series } from '../types';
 import { cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 export function Series() {
+  const { t } = useTranslation();
   const [series, setSeries] = useState<Series[]>([]);
   const [filteredSeries, setFilteredSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,14 +64,14 @@ export function Series() {
             <Link to="/" className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-xl font-bold text-slate-100">All Series</h1>
+            <h1 className="text-xl font-bold text-slate-100">{t('allSeries')}</h1>
           </div>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input
               type="text"
-              placeholder="Search series..."
+              placeholder={t('searchSeries')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all"
@@ -85,7 +87,7 @@ export function Series() {
                   selectedCategory === null ? "bg-primary text-slate-900" : "bg-slate-800/50 text-slate-300"
                 )}
               >
-                All
+                {t('all')}
               </button>
               {categories.map(cat => (
                 <button
@@ -148,12 +150,12 @@ export function Series() {
                         </p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
                           <Play size={10} />
-                          <span>{s.episodeCount} episodes</span>
+                          <span>{s.episodeCount} {t('episodesCount')}</span>
                         </div>
                       </div>
                       {index === 0 && (
                         <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary/90 rounded text-xs font-medium text-slate-900">
-                          Popular
+                          {t('popular')}
                         </div>
                       )}
                     </div>
@@ -172,10 +174,10 @@ export function Series() {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
                   <BookOpen className="w-10 h-10 text-slate-600" />
                 </div>
-                <p className="text-slate-400">No series found</p>
+                <p className="text-slate-400">{t('noSeriesFound')}</p>
                 {searchQuery && (
                   <p className="text-sm text-slate-500 mt-2">
-                    Try a different search term
+                    {t('tryDifferentSearchTerm')}
                   </p>
                 )}
               </motion.div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Share2, Play, Pause, Loader2, CheckCircle2,
@@ -21,6 +22,7 @@ interface ShareSheetProps {
 const MAX_CLIP_SEC = 60;
 
 export function ShareSheet({ track, currentPosition, totalDuration, onClose }: ShareSheetProps) {
+  const { t } = useTranslation();
   // Clamp start so the 60s window fits within the track
   const maxStart = Math.max(0, totalDuration - MAX_CLIP_SEC);
   const defaultStart = Math.min(Math.max(0, currentPosition), maxStart);
@@ -131,17 +133,17 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast.success('Clip downloaded');
-  }, [clipBlob, clipFilename]);
+    toast.success(t('clipDownloaded'));
+  }, [clipBlob, clipFilename, t]);
 
   const handleCopyCaption = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(caption);
-      toast.success('Caption copied to clipboard');
+      toast.success(t('captionCopied'));
     } catch {
-      toast.error('Could not copy to clipboard');
+      toast.error(t('copyFailed'));
     }
-  }, [caption]);
+  }, [caption, t]);
 
   const handleShare = useCallback(async () => {
     if (!clipBlob) return;
@@ -204,7 +206,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-slate-100 flex items-center gap-2">
             <Share2 size={18} className="text-primary" />
-            Share Clip
+            {t('shareClip')}
           </h3>
           <button
             onClick={onClose}
@@ -218,7 +220,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
           <div className="text-center py-6 text-slate-400">
             <AlertCircle className="w-10 h-10 mx-auto mb-3 text-slate-600" />
             <p className="text-sm">
-              {isRadio ? 'Live radio streams cannot be clipped.' : 'No audio available to clip.'}
+              {isRadio ? t('radioNoClip') : t('noAudioToClip')}
             </p>
           </div>
         ) : (
@@ -242,7 +244,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                  60-Second Window
+                  {t('sixtySecWindow')}
                 </span>
                 <span className="text-xs text-primary font-mono">
                   {formatDuration(startSec)} – {formatDuration(endSec)}
@@ -293,7 +295,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
               <div className="flex justify-between text-xs text-slate-500 mt-1 font-mono">
                 <span>0:00</span>
                 <span className="text-slate-400">
-                  Clip: {Math.round(displayClipDuration)}s
+                  {t('clipLabel')} {Math.round(displayClipDuration)}s
                 </span>
                 <span>{totalDuration > 0 ? formatDuration(totalDuration) : '--:--'}</span>
               </div>
@@ -313,7 +315,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                   className="w-full py-3.5 rounded-2xl bg-primary text-slate-900 font-semibold flex items-center justify-center gap-2 mb-4 shadow-lg shadow-primary/20"
                 >
                   <Scissors size={17} />
-                  Generate Clip
+                  {t('generateClip')}
                 </motion.button>
               )}
 
@@ -328,10 +330,10 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                   <div className="flex items-center gap-3 mb-2">
                     <Loader2 size={16} className="text-primary animate-spin flex-shrink-0" />
                     <span className="text-sm text-slate-300 flex-1">
-                      {progress < 40 ? 'Fetching audio…'
-                        : progress < 70 ? 'Decoding…'
-                        : progress < 90 ? 'Slicing clip…'
-                        : 'Encoding WAV…'}
+                      {progress < 40 ? t('fetchingAudio')
+                        : progress < 70 ? t('decoding')
+                        : progress < 90 ? t('slicingClip')
+                        : t('encodingWav')}
                     </span>
                     <span className="text-xs text-primary font-mono">{progress}%</span>
                   </div>
@@ -356,7 +358,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 mb-3">
                     <AlertCircle size={16} className="text-rose-400 flex-shrink-0" />
                     <p className="text-sm text-rose-300 flex-1">
-                      Failed to generate clip. This may be a CORS or network issue.
+                      {t('clipGenFailed')}
                     </p>
                   </div>
                   <button
@@ -364,7 +366,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                     className="w-full py-3 rounded-2xl bg-slate-700 text-slate-200 font-medium flex items-center justify-center gap-2"
                   >
                     <Loader2 size={16} />
-                    Retry
+                    {t('retry')}
                   </button>
                 </motion.div>
               )}
@@ -381,14 +383,14 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                     <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
                     <p className="text-sm text-emerald-300 flex-1">
-                      Clip ready — {Math.round(actualDuration)}s • {(clipBlob.size / 1024 / 1024).toFixed(1)} MB
+                      {t('clipReady')} {Math.round(actualDuration)}s • {(clipBlob.size / 1024 / 1024).toFixed(1)} {t('mb')}
                     </p>
                     {/* Re-generate (different window) */}
                     <button
                       onClick={() => { setStatus('idle'); setClipBlob(null); setProgress(0); }}
                       className="text-xs text-slate-400 hover:text-slate-200 underline ml-1"
                     >
-                      Redo
+                      {t('redo')}
                     </button>
                   </div>
 
@@ -402,7 +404,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                         : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
                     )}
                   >
-                    {isPreviewing ? <><Pause size={16} /> Stop Preview</> : <><Play size={16} /> Preview Clip</>}
+                    {isPreviewing ? <><Pause size={16} /> {t('stopPreview')}</> : <><Play size={16} /> {t('previewClip')}</>}
                   </button>
 
                   {/* Primary share button */}
@@ -413,7 +415,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                     className="w-full py-3.5 rounded-2xl bg-primary text-slate-900 font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                   >
                     <Share2 size={17} />
-                    Share to WhatsApp / Social
+                    {t('shareToSocial')}
                   </motion.button>
 
                   {/* Secondary actions */}
@@ -423,14 +425,14 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                       className="py-3 rounded-2xl bg-slate-700 text-slate-200 font-medium text-sm flex items-center justify-center gap-2 hover:bg-slate-600 transition-colors"
                     >
                       <Download size={15} />
-                      Download
+                      {t('download')}
                     </button>
                     <button
                       onClick={handleCopyCaption}
                       className="py-3 rounded-2xl bg-slate-700 text-slate-200 font-medium text-sm flex items-center justify-center gap-2 hover:bg-slate-600 transition-colors"
                     >
                       <Copy size={15} />
-                      Copy Text
+                      {t('copyText')}
                     </button>
                   </div>
                 </motion.div>
@@ -443,7 +445,7 @@ export function ShareSheet({ track, currentPosition, totalDuration, onClose }: S
                 onClick={() => setCaptionExpanded(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-400 hover:text-slate-200 transition-colors"
               >
-                <span className="font-medium">Share caption preview</span>
+                <span className="font-medium">{t('shareCaptionPreview')}</span>
                 <motion.span
                   animate={{ rotate: captionExpanded ? 180 : 0 }}
                   transition={{ duration: 0.2 }}

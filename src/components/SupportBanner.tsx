@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import { Heart, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { useTranslation } from '../hooks/useTranslation';
 
 export function SupportBanner() {
   const { settings, loading } = useAppSettings();
+  const { t } = useTranslation();
 
   if (loading || !settings.isDonationsEnabled) {
     return null;
@@ -27,17 +29,17 @@ export function SupportBanner() {
           
           <div className="flex-1">
             <h3 className="text-[15px] font-bold text-slate-100 flex items-center gap-1.5 mb-1.5">
-              Keep the App Running <Sparkles size={14} className="text-amber-400" />
+              {t('keepAppRunning')} <Sparkles size={14} className="text-amber-400" />
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Arewa Central is free and ad-free. Support us to cover server costs and keep beneficial knowledge accessible to everyone.
+              {t('supportUsDesc')}
             </p>
             
             <Link 
               to="/donate"
               className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-sm font-semibold transition-all shadow-lg shadow-emerald-500/25"
             >
-              Donate Now
+              {t('donateNow')}
             </Link>
           </div>
         </div>

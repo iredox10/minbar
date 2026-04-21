@@ -6,10 +6,12 @@ import { useAudio } from '../context/AudioContext';
 import type { DownloadedEpisode, CurrentTrack } from '../types';
 import { formatDuration, formatFileSize, formatRelativeDate, cn } from '../lib/utils';
 import { motion } from 'framer-motion';
+import { useTranslation } from '../hooks/useTranslation';
 
 export function Downloads() {
   const downloads = useLiveQuery(() => getAllDownloads(), []);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const { t } = useTranslation();
   
   const { play, currentTrack, playerState } = useAudio();
 
@@ -44,18 +46,18 @@ export function Downloads() {
   return (
     <div className="px-4 py-6 space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-100">Downloads</h1>
+        <h1 className="text-2xl font-bold text-slate-100">{t('downloads')}</h1>
         <p className="text-sm text-slate-400 mt-1">
-          {downloads?.length || 0} episodes • {formatFileSize(totalSize)} used
+          {downloads?.length || 0} {t('episodes')} • {formatFileSize(totalSize)} {t('used')}
         </p>
       </header>
 
       {!downloads || downloads.length === 0 ? (
         <div className="text-center py-12">
           <Download className="w-16 h-16 mx-auto text-slate-700 mb-4" />
-          <p className="text-slate-400">No downloaded episodes.</p>
+          <p className="text-slate-400">{t('noDownloads')}</p>
           <p className="text-sm text-slate-500 mt-1">
-            Download episodes to listen offline.
+            {t('downloadToListen')}
           </p>
         </div>
       ) : (

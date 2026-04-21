@@ -8,6 +8,7 @@ import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { DownloadButton } from '../components/audio/DownloadButton';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -24,6 +25,7 @@ const item = {
 
 export function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
   const [series, setSeries] = useState<Series | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [relatedSeries, setRelatedSeries] = useState<Series[]>([]);
@@ -173,9 +175,9 @@ export function SeriesDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-slate-400 text-lg">Series not found</p>
+          <p className="text-slate-400 text-lg">{t('seriesNotFound')}</p>
           <Link to="/" className="text-primary mt-2 inline-block">
-            Go home
+            {t('goHome')}
           </Link>
         </div>
       </div>
@@ -202,7 +204,7 @@ export function SeriesDetail() {
             className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft size={20} />
-            <span>Back</span>
+            <span>{t('back')}</span>
           </Link>
 
           <motion.div
@@ -229,7 +231,7 @@ export function SeriesDetail() {
             <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
               <span className="flex items-center gap-1.5">
                 <Play size={14} />
-                {episodes.length} episodes
+                {episodes.length} {t('episodesCount')}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock size={14} />
@@ -245,7 +247,7 @@ export function SeriesDetail() {
                 className="px-6 py-3 bg-primary text-slate-900 font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/30"
               >
                 <Play size={18} />
-                Play All
+                {t('playAll')}
               </motion.button>
 
               <motion.button
@@ -281,7 +283,7 @@ export function SeriesDetail() {
             animate="show"
             className="mb-8"
           >
-            <h2 className="text-lg font-semibold text-slate-100 mb-4">Episodes</h2>
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">{t('episodes')}</h2>
 
             <div className="space-y-3">
               {episodes.map((episode, index) => (
@@ -336,7 +338,7 @@ export function SeriesDetail() {
                             <span className="w-1 h-1 rounded-full bg-slate-600" />
                             <span className="flex items-center gap-1 text-emerald-400">
                               <Download size={10} />
-                              Downloaded
+                              {t('downloaded')}
                             </span>
                           </>
                         )}
@@ -354,7 +356,7 @@ export function SeriesDetail() {
         ) : (
           <div className="text-center py-12">
             <Play className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">No episodes available yet</p>
+            <p className="text-slate-400">{t('noEpisodesAvailableYet')}</p>
           </div>
         )}
 
@@ -364,12 +366,12 @@ export function SeriesDetail() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <h2 className="text-lg font-semibold text-slate-100 mb-4">Related Series</h2>
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">{t('relatedSeries')}</h2>
             <div className="grid grid-cols-2 gap-4">
               {relatedSeries.map(s => (
                 <Link
                   key={s.$id}
-                  to={`/series/${s.$id}`}
+                  to={`/podcasts/series/${s.$id}`}
                   className="glass-card p-3 rounded-2xl group hover:bg-slate-800/70 transition-colors"
                 >
                   <div className="aspect-square rounded-xl overflow-hidden mb-3">

@@ -94,6 +94,7 @@ export interface Favorite {
 
 export interface Playlist {
   id?: number;
+  appwriteId?: string;
   name: string;
   description?: string;
   createdAt: Date;
@@ -102,6 +103,7 @@ export interface Playlist {
 
 export interface PlaylistItem {
   id?: number;
+  appwriteId?: string;
   playlistId: number;
   episodeId: string;
   addedAt: Date;

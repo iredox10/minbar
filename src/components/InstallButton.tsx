@@ -3,6 +3,7 @@ import { Download, CheckCircle, Smartphone, Share, Plus } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 function isIOS(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
@@ -14,6 +15,7 @@ function isSafari(): boolean {
 
 /** Inline sheet shown on iOS instead of the native prompt */
 function IOSSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       <motion.div
@@ -41,8 +43,8 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
               <Smartphone size={22} className="text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-100">Add to Home Screen</h3>
-              <p className="text-xs text-slate-400">Install Arewa Central as an app</p>
+              <h3 className="font-semibold text-slate-100">{t('addToHomeScreen')}</h3>
+              <p className="text-xs text-slate-400">{t('installArewaCentralAsApp')}</p>
             </div>
           </div>
 
@@ -51,11 +53,11 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
               <div className="w-7 h-7 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
               <div>
                 <p className="text-sm text-slate-200">
-                  Tap the <strong className="text-slate-100">Share</strong> button in Safari's toolbar
+                  {t('tapThe')} <strong className="text-slate-100">{t('share')}</strong> {t('buttonInSafariToolbar')}
                 </p>
                 <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 text-xs">
                   <Share size={13} />
-                  <span>Share</span>
+                  <span>{t('share')}</span>
                 </div>
               </div>
             </li>
@@ -64,11 +66,11 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
               <div className="w-7 h-7 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
               <div>
                 <p className="text-sm text-slate-200">
-                  Scroll down and tap <strong className="text-slate-100">Add to Home Screen</strong>
+                  {t('scrollDownAndTap')} <strong className="text-slate-100">{t('addToHomeScreen')}</strong>
                 </p>
                 <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 text-xs">
                   <Plus size={13} />
-                  <span>Add to Home Screen</span>
+                  <span>{t('addToHomeScreen')}</span>
                 </div>
               </div>
             </li>
@@ -76,7 +78,7 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
             <li className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
               <p className="text-sm text-slate-200 pt-0.5">
-                Tap <strong className="text-slate-100">Add</strong> in the top-right corner
+                {t('tap')} <strong className="text-slate-100">{t('add')}</strong> {t('inTopRightCorner')}
               </p>
             </li>
           </ol>
@@ -85,7 +87,7 @@ function IOSSheet({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className="w-full py-3.5 rounded-2xl bg-primary text-slate-900 font-semibold text-sm"
           >
-            Got it
+            {t('gotIt')}
           </button>
         </motion.div>
       </motion.div>
@@ -97,6 +99,7 @@ export function InstallButton({ className }: { className?: string }) {
   const { canInstall, isInstalled, install } = usePWAInstall();
   const [installing, setInstalling] = useState(false);
   const [showIOSSheet, setShowIOSSheet] = useState(false);
+  const { t } = useTranslation();
 
   const handleInstall = async () => {
     if (canInstall) {
@@ -116,8 +119,8 @@ export function InstallButton({ className }: { className?: string }) {
         <div className={cn("flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20", className)}>
           <CheckCircle className="w-5 h-5 text-emerald-500" />
           <div>
-            <p className="text-sm font-medium text-emerald-400">App Installed</p>
-            <p className="text-xs text-emerald-500/70">You're using the installed version</p>
+            <p className="text-sm font-medium text-emerald-400">{t('appInstalled')}</p>
+            <p className="text-xs text-emerald-500/70">{t('usingInstalledVersion')}</p>
           </div>
         </div>
       ) : canInstall ? (
@@ -135,9 +138,9 @@ export function InstallButton({ className }: { className?: string }) {
           <Download className={cn("w-5 h-5 text-primary", installing && "animate-bounce")} />
           <div className="text-left flex-1">
             <p className="text-sm font-medium text-slate-200">
-              {installing ? 'Installing…' : 'Install App'}
+              {installing ? t('installingApp') : t('installApp')}
             </p>
-            <p className="text-xs text-slate-400">Add to home screen for quick access</p>
+            <p className="text-xs text-slate-400">{t('addToHomeScreenQuickAccess')}</p>
           </div>
         </motion.button>
       ) : isIOS() && isSafari() ? (
@@ -152,8 +155,8 @@ export function InstallButton({ className }: { className?: string }) {
         >
           <Smartphone className="w-5 h-5 text-primary" />
           <div className="text-left flex-1">
-            <p className="text-sm font-medium text-slate-200">Install App</p>
-            <p className="text-xs text-slate-400">Tap Share → Add to Home Screen</p>
+            <p className="text-sm font-medium text-slate-200">{t('installApp')}</p>
+            <p className="text-xs text-slate-400">{t('tapShareAddToHomeScreen')}</p>
           </div>
         </motion.button>
       ) : null}

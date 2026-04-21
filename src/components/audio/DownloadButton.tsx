@@ -1,6 +1,7 @@
 import { Download, CheckCircle2, AlertCircle, Square } from 'lucide-react';
 import { useDownload } from '../../hooks/useDownload';
 import type { Episode, Series } from '../../types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface DownloadButtonProps {
   episode: Episode;
@@ -16,6 +17,7 @@ export function DownloadButton({ episode, series }: DownloadButtonProps) {
     episode.speakerId || series?.speakerId,
     episode.duration
   );
+  const { t } = useTranslation();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ export function DownloadButton({ episode, series }: DownloadButtonProps) {
 
   if (status === 'done') {
     return (
-      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" title="Downloaded">
+      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" title={t('downloaded')}>
         <CheckCircle2 size={20} className="text-emerald-500" />
       </div>
     );
@@ -44,7 +46,7 @@ export function DownloadButton({ episode, series }: DownloadButtonProps) {
       <button 
         onClick={handleClick}
         className="w-8 h-8 flex items-center justify-center flex-shrink-0 relative text-primary hover:text-rose-500 transition-colors"
-        title={`Downloading... ${progress}%. Click to cancel.`}
+        title={t('downloadingProgress').replace('{{progress}}', progress.toString())}
       >
         <svg className="w-8 h-8 transform -rotate-90 absolute" viewBox="0 0 36 36">
           <circle
@@ -70,7 +72,7 @@ export function DownloadButton({ episode, series }: DownloadButtonProps) {
       <button
         onClick={handleClick}
         className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-rose-500 hover:text-rose-400 transition-colors"
-        title={errorMessage || 'Download failed'}
+        title={errorMessage || t('downloadFailedBtn')}
       >
         <AlertCircle size={20} />
       </button>
@@ -81,7 +83,7 @@ export function DownloadButton({ episode, series }: DownloadButtonProps) {
     <button
       onClick={handleClick}
       className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-slate-500 hover:text-primary transition-colors focus:outline-none"
-      title="Download Episode"
+      title={t('downloadEpisode')}
     >
       <Download size={20} />
     </button>

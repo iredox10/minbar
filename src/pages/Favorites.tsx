@@ -5,6 +5,7 @@ import { Heart, Play, Trash2, Music2, BookOpen } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../lib/db';
 import type { Favorite } from '../types';
 import { formatRelativeDate, cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -25,6 +26,7 @@ export function Favorites() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function loadFavorites() {
@@ -51,10 +53,10 @@ export function Favorites() {
     : favorites.filter(f => f.type === activeTab);
 
   const tabs: { id: TabType; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: favorites.length },
-    { id: 'episode', label: 'Episodes', count: favorites.filter(f => f.type === 'episode').length },
-    { id: 'series', label: 'Series', count: favorites.filter(f => f.type === 'series').length },
-    { id: 'dua', label: 'Duas', count: favorites.filter(f => f.type === 'dua').length }
+    { id: 'all', label: t('all'), count: favorites.length },
+    { id: 'episode', label: t('episodes'), count: favorites.filter(f => f.type === 'episode').length },
+    { id: 'series', label: t('series'), count: favorites.filter(f => f.type === 'series').length },
+    { id: 'dua', label: t('duas'), count: favorites.filter(f => f.type === 'dua').length }
   ];
 
   const getLink = (fav: Favorite) => {
@@ -85,7 +87,7 @@ export function Favorites() {
         <div className="px-4 py-4">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Heart size={20} className="text-primary" />
-            Favorites
+            {t('favorites')}
           </h1>
         </div>
 
@@ -131,15 +133,15 @@ export function Favorites() {
             <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
               <Heart className="w-10 h-10 text-slate-600" />
             </div>
-            <p className="text-slate-400 text-lg">No favorites yet</p>
+            <p className="text-slate-400 text-lg">{t('noFavoritesYet')}</p>
             <p className="text-sm text-slate-500 mt-2">
-              Tap the heart icon to save content
+              {t('tapHeartToSave')}
             </p>
             <Link 
               to="/"
               className="inline-block mt-4 px-6 py-3 bg-primary text-slate-900 font-medium rounded-xl"
             >
-              Explore Content
+              {t('exploreContent')}
             </Link>
           </motion.div>
         ) : filteredFavorites.length === 0 ? (
@@ -148,7 +150,7 @@ export function Favorites() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <p className="text-slate-400">No {activeTab === 'all' ? '' : activeTab + 's'} in favorites</p>
+            <p className="text-slate-400">{t('noItemsInFavorites')}</p>
           </motion.div>
         ) : (
           <motion.div
@@ -196,7 +198,7 @@ export function Favorites() {
                               {fav.title}
                             </p>
                             <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                              <span className="capitalize">{fav.type}</span>
+                              <span className="capitalize">{t((fav.type === 'series' ? 'seriesSingle' : fav.type) as any) || fav.type}</span>
                               <span className="w-1 h-1 rounded-full bg-slate-600" />
                               <span>{formatRelativeDate(new Date(fav.addedAt))}</span>
                             </div>

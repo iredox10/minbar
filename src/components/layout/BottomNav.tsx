@@ -64,7 +64,7 @@ export function BottomNav() {
                 "relative z-10 text-[10px] font-medium transition-colors",
                 isActive ? "text-primary" : "text-slate-500"
               )}>
-                {path === '/player' ? 'Player' : t(labelKey)}
+                {path === '/player' ? t('player' as TranslationKey) : t(labelKey)}
               </span>
             </NavLink>
           );

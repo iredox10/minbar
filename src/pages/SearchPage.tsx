@@ -7,6 +7,7 @@ import { trackSearch } from '../lib/analytics';
 import type { Episode, Speaker, Series, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { formatDuration, formatDate, cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 
 type SearchTab = 'all' | 'episodes' | 'speakers' | 'series';
@@ -24,6 +25,7 @@ export function SearchPage() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   const { play, currentTrack, playerState } = useAudio();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
@@ -121,10 +123,10 @@ export function SearchPage() {
   const hasFilteredResults = filteredEpisodes.length > 0 || filteredSpeakers.length > 0 || filteredSeries.length > 0;
 
   const tabs: { id: SearchTab; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: episodes.length + speakers.length + series.length },
-    { id: 'episodes', label: 'Episodes', count: episodes.length },
-    { id: 'speakers', label: 'Speakers', count: speakers.length },
-    { id: 'series', label: 'Series', count: series.length }
+    { id: 'all', label: t('all'), count: episodes.length + speakers.length + series.length },
+    { id: 'episodes', label: t('episode'), count: episodes.length },
+    { id: 'speakers', label: t('speakers'), count: speakers.length },
+    { id: 'series', label: t('series'), count: series.length }
   ];
 
   const POPULAR_TOPICS = [
@@ -136,13 +138,13 @@ export function SearchPage() {
     <div className="min-h-screen">
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50">
         <div className="px-4 py-4">
-          <h1 className="text-xl font-bold text-slate-100 mb-4">Search</h1>
+          <h1 className="text-xl font-bold text-slate-100 mb-4">{t('search')}</h1>
           
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
             <input
               type="text"
-              placeholder="Search episodes, speakers, series..."
+              placeholder={t('searchPlaceholder')}
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
               autoFocus
@@ -191,13 +193,13 @@ export function SearchPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp size={16} className="text-slate-500" />
-                    <h2 className="text-sm font-medium text-slate-400">Recent Searches</h2>
+                    <h2 className="text-sm font-medium text-slate-400">{t('recentSearches')}</h2>
                   </div>
                   <button
                     onClick={clearRecentSearches}
                     className="text-xs text-slate-500 hover:text-primary transition-colors"
                   >
-                    Clear
+                    {t('clear')}
                   </button>
                 </div>
                 
@@ -218,7 +220,7 @@ export function SearchPage() {
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <Tag size={16} className="text-primary" />
-                <h2 className="text-sm font-medium text-slate-400">Browse Topics</h2>
+                <h2 className="text-sm font-medium text-slate-400">{t('browseTopics')}</h2>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -259,9 +261,9 @@ export function SearchPage() {
                 className="text-center py-16"
               >
                 <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg">No results found for {activeTab !== 'all' ? activeTab : 'this search'}</p>
+                <p className="text-slate-400 text-lg">{t('noResultsFound')} {activeTab !== 'all' ? activeTab : 'this search'}</p>
                 <p className="text-sm text-slate-500 mt-2">
-                  Try different keywords or check spelling
+                  {t('tryDifferentKeywords')}
                 </p>
               </motion.div>
             )}
@@ -279,7 +281,7 @@ export function SearchPage() {
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <User size={16} className="text-primary" />
-                      <h2 className="text-sm font-semibold text-slate-100">Speakers</h2>
+                      <h2 className="text-sm font-semibold text-slate-100">{t('speakers')}</h2>
                     </div>
                     
                     <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
@@ -316,7 +318,7 @@ export function SearchPage() {
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <BookOpen size={16} className="text-emerald-400" />
-                      <h2 className="text-sm font-semibold text-slate-100">Series</h2>
+                      <h2 className="text-sm font-semibold text-slate-100">{t('series')}</h2>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -346,7 +348,7 @@ export function SearchPage() {
                                   {s.title}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                  {s.episodeCount} episodes
+                                  {s.episodeCount} {t('episodes')}
                                 </p>
                               </div>
                             </div>
@@ -361,7 +363,7 @@ export function SearchPage() {
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <Play size={16} className="text-rose-400" />
-                      <h2 className="text-sm font-semibold text-slate-100">Episodes</h2>
+                      <h2 className="text-sm font-semibold text-slate-100">{t('episodes')}</h2>
                     </div>
                     
                     <div className="space-y-3">

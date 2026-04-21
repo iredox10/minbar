@@ -7,6 +7,8 @@ import { cn } from '../../lib/utils';
 import { useDownload } from '../../hooks/useDownload';
 import type { CurrentTrack } from '../../types';
 
+import { useTranslation } from '../../hooks/useTranslation';
+
 interface DownloadSheetProps {
   track: CurrentTrack;
   onClose: () => void;
@@ -19,6 +21,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
+  const { t } = useTranslation();
   const { status, progress, download, startDownload, removeDownload, errorMessage } =
     useDownload(
       track.id,
@@ -51,7 +54,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-slate-100 flex items-center gap-2">
             <Download size={18} className="text-primary" />
-            Download Episode
+            {t('downloadEpisode')}
           </h3>
           <button
             onClick={onClose}
@@ -66,8 +69,8 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
             <AlertCircle className="w-10 h-10 mx-auto mb-3 text-slate-600" />
             <p className="text-sm">
               {isRadio
-                ? 'Live radio streams cannot be downloaded.'
-                : 'No audio available to download.'}
+                ? t('radioNoDownload')
+                : t('noAudioToDownload')}
             </p>
           </div>
         ) : (
@@ -104,7 +107,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
                   className="flex items-center justify-center py-6 gap-2 text-slate-400"
                 >
                   <Loader2 size={16} className="animate-spin" />
-                  <span className="text-sm">Checking downloads…</span>
+                  <span className="text-sm">{t('checkingDownloads')}</span>
                 </motion.div>
               )}
 
@@ -119,8 +122,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-slate-700/40 border border-slate-700/60 mb-4">
                     <Wifi size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      The full episode will be saved to your device for offline listening.
-                      Downloads use your current network connection.
+                      {t('downloadDisclaimer')}
                     </p>
                   </div>
                   <motion.button
@@ -130,7 +132,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
                     className="w-full py-3.5 rounded-2xl bg-primary text-slate-900 font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                   >
                     <Download size={17} />
-                    Download Episode
+                    {t('downloadEpisode')}
                   </motion.button>
                 </motion.div>
               )}
@@ -145,7 +147,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Loader2 size={16} className="text-primary animate-spin flex-shrink-0" />
-                    <span className="text-sm text-slate-300 flex-1">Downloading…</span>
+                    <span className="text-sm text-slate-300 flex-1">{t('downloading')}</span>
                     <span className="text-xs text-primary font-mono">{progress}%</span>
                   </div>
                   <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden mb-3">
@@ -156,7 +158,7 @@ export function DownloadSheet({ track, onClose }: DownloadSheetProps) {
                     />
                   </div>
                   <p className="text-xs text-center text-slate-500">
-                    Keep this screen open while downloading
+                    {t('keepScreenOpen')}
                   </p>
                 </motion.div>
               )}

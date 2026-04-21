@@ -16,6 +16,7 @@ import type { Playlist, QueueItem } from '../types';
 import { ShareSheet } from '../components/audio/ShareSheet';
 import { DownloadSheet } from '../components/audio/DownloadSheet';
 import { useDownload } from '../hooks/useDownload';
+import { useTranslation } from '../hooks/useTranslation';
 
 import { useAppSettings } from '../hooks/useAppSettings';
 
@@ -194,6 +195,7 @@ function SheetBackdrop({ onClose }: { onClose: () => void }) {
    Speed sheet
 ───────────────────────────────────────────── */
 function SpeedSheet({ speed, onSelect, onClose }: { speed: number; onSelect: (s: number) => void; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="speed-sheet"
@@ -207,7 +209,7 @@ function SpeedSheet({ speed, onSelect, onClose }: { speed: number; onSelect: (s:
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <Gauge size={18} className="text-violet-400" />
-          Playback Speed
+          {t('playbackSpeed')}
         </h3>
         <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
           <X size={16} />
@@ -240,6 +242,7 @@ function SpeedSheet({ speed, onSelect, onClose }: { speed: number; onSelect: (s:
 ───────────────────────────────────────────── */
 function SleepSheet({ remaining, onSet, onClear, onClose }: { remaining: number | null; onSet: (m: number) => void; onClear: () => void; onClose: () => void }) {
   const options = [5, 10, 15, 30, 45, 60, 90];
+  const { t } = useTranslation();
   return (
     <motion.div
       key="sleep-sheet"
@@ -253,7 +256,7 @@ function SleepSheet({ remaining, onSet, onClear, onClose }: { remaining: number 
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <Moon size={18} className="text-amber-400" />
-          Sleep Timer
+          {t('sleepTimer')}
           {remaining && (
             <span className="text-sm text-amber-400 font-mono">({formatSleepTimer(remaining)})</span>
           )}
@@ -282,7 +285,7 @@ function SleepSheet({ remaining, onSet, onClear, onClose }: { remaining: number 
           onClick={() => { onClear(); onClose(); }}
           className="mt-4 w-full py-3 rounded-xl text-sm font-medium bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all"
         >
-          Cancel Timer
+          {t('cancelTimer')}
         </motion.button>
       )}
     </motion.div>
@@ -293,6 +296,7 @@ function SleepSheet({ remaining, onSet, onClear, onClose }: { remaining: number 
    Playlist sheet
 ───────────────────────────────────────────── */
 function PlaylistSheet({ playlists, onSelect, onClose }: { playlists: Playlist[]; onSelect: (id: number) => void; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="playlist-sheet"
@@ -306,14 +310,14 @@ function PlaylistSheet({ playlists, onSelect, onClose }: { playlists: Playlist[]
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <ListPlus size={18} className="text-primary" />
-          Add to Playlist
+          {t('addToPlaylistTitle')}
         </h3>
         <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
           <X size={16} />
         </button>
       </div>
       {playlists.length === 0 ? (
-        <p className="text-slate-400 text-center py-4 text-sm">No playlists yet. Create one in the Playlists tab.</p>
+        <p className="text-slate-400 text-center py-4 text-sm">{t('noPlaylistsYetMsg')}</p>
       ) : (
         <div className="space-y-2">
           {playlists.map((pl) => (
@@ -425,6 +429,7 @@ function UpNextSheet({
   onRemove: (index: number) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="upnext-sheet"
@@ -439,8 +444,8 @@ function UpNextSheet({
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-slate-100 flex items-center gap-2">
             <ListOrdered size={18} className="text-primary" />
-            Up Next
-            <span className="text-xs text-slate-500 font-normal ml-1">({queue.length} tracks)</span>
+            {t('upNext')}
+            <span className="text-xs text-slate-500 font-normal ml-1">({queue.length} {t('tracks')})</span>
           </h3>
           <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
             <X size={16} />
@@ -448,7 +453,7 @@ function UpNextSheet({
         </div>
       </div>
       {queue.length === 0 ? (
-        <p className="text-slate-400 text-center py-6 text-sm px-6">Queue is empty.</p>
+        <p className="text-slate-400 text-center py-6 text-sm px-6">{t('queueIsEmpty')}</p>
       ) : (
         <div className="overflow-y-auto pb-6 px-4 space-y-1.5">
           {queue.map((track, idx) => {
@@ -518,6 +523,7 @@ function UpNextSheet({
 ───────────────────────────────────────────── */
 export function PlayerPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     currentTrack,
     playerState,
@@ -613,9 +619,9 @@ export function PlayerPage() {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Music2 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400">No track playing</p>
+          <p className="text-slate-400">{t('noTrackPlaying')}</p>
           <button onClick={() => navigate('/')} className="mt-4 px-4 py-2 bg-primary text-slate-900 rounded-xl font-medium">
-            Browse Content
+            {t('browseContent')}
           </button>
         </div>
       </div>
@@ -669,7 +675,7 @@ export function PlayerPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-sm backdrop-blur-md"
                 >
                   <Heart size={12} className="fill-rose-400/50" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">Support Us</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">{t('supportUs')}</span>
                 </motion.div>
               </Link>
             )}
@@ -721,7 +727,7 @@ export function PlayerPage() {
             {isLoading && (
               <span className="text-[11px] px-2 py-0.5 rounded-lg bg-slate-700/80 text-slate-400 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full border border-slate-400 border-t-transparent animate-spin" />
-                Loading…
+                {t('loading')}
               </span>
             )}
           </div>
@@ -910,7 +916,7 @@ export function PlayerPage() {
             )}
           >
             <RepeatIcon size={20} />
-            <span className="text-[10px]">{repeatMode === 'one' ? 'One' : repeatMode === 'all' ? 'All' : 'Off'}</span>
+            <span className="text-[10px]">{repeatMode === 'one' ? t('one') : repeatMode === 'all' ? t('allMode') : t('offMode')}</span>
           </motion.button>
 
           {/* Speed */}
@@ -943,7 +949,7 @@ export function PlayerPage() {
             )}
           >
             <Moon size={13} />
-            <span className="font-mono">{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : 'Sleep'}</span>
+            <span className="font-mono">{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : t('sleep')}</span>
           </motion.button>
 
           {/* Volume toggle */}
@@ -958,7 +964,7 @@ export function PlayerPage() {
             )}
           >
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-            <span className="text-[10px]">{isMuted ? 'Muted' : 'Vol'}</span>
+            <span className="text-[10px]">{isMuted ? t('muted') : t('vol')}</span>
           </motion.button>
 
           {/* Up Next */}
@@ -975,7 +981,7 @@ export function PlayerPage() {
             )}
           >
             <ListOrdered size={14} />
-            <span>{queue.length > 0 ? queue.length : 'Queue'}</span>
+            <span>{queue.length > 0 ? queue.length : t('queue')}</span>
           </motion.button>
         </div>
 

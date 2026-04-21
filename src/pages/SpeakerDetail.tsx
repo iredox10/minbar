@@ -7,6 +7,7 @@ import { useAudio } from '../context/AudioContext';
 import { useUser } from '../context/UserContext';
 import type { Speaker, Series, Episode, CurrentTrack } from '../types';
 import { formatDuration, cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -22,6 +23,7 @@ const item = {
 };
 
 export function SpeakerDetail() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const [speaker, setSpeaker] = useState<Speaker | null>(null);
   const [series, setSeries] = useState<Series[]>([]);
@@ -100,9 +102,9 @@ export function SpeakerDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-slate-400 text-lg">Speaker not found</p>
+          <p className="text-slate-400 text-lg">{t('speakerNotFound')}</p>
           <Link to="/podcasts/speakers" className="text-primary mt-2 inline-block">
-            Browse all speakers
+            {t('browseAllSpeakers')}
           </Link>
         </div>
       </div>
@@ -120,7 +122,7 @@ export function SpeakerDetail() {
             className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
           >
             <ArrowLeft size={20} />
-            <span>All Speakers</span>
+            <span>{t('allSpeakers')}</span>
           </Link>
 
           <motion.div
@@ -150,9 +152,9 @@ export function SpeakerDetail() {
                 )}
               >
                 {isFollowing ? (
-                  <><UserCheck size={16} /> Following</>
+                  <><UserCheck size={16} /> {t('following')}</>
                 ) : (
-                  <><UserPlus size={16} /> Follow</>
+                  <><UserPlus size={16} /> {t('follow')}</>
                 )}
               </button>
             )}
@@ -177,7 +179,7 @@ export function SpeakerDetail() {
             <div className="flex items-center gap-2 mb-5">
               <Music size={18} className="text-violet-400" />
               <h2 className="text-lg font-semibold text-slate-100">
-                Audio ({standaloneEpisodes.length})
+                {t('audio')} ({standaloneEpisodes.length})
               </h2>
             </div>
 
@@ -238,7 +240,7 @@ export function SpeakerDetail() {
             <div className="flex items-center gap-2 mb-5">
               <BookOpen size={18} className="text-primary" />
               <h2 className="text-lg font-semibold text-slate-100">
-                Series ({series.length})
+                {t('seriesSingle')} ({series.length})
               </h2>
             </div>
 
@@ -267,12 +269,12 @@ export function SpeakerDetail() {
                         </p>
                         <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
                           <Play size={10} />
-                          {s.episodeCount} episodes
+                          {s.episodeCount} {t('episodesCount')}
                         </p>
                       </div>
                       {index === 0 && (
                         <div className="absolute top-3 left-3 px-2 py-1 bg-primary/90 rounded-lg text-xs font-medium text-slate-900">
-                          Featured
+                          {t('featured')}
                         </div>
                       )}
                     </div>
@@ -286,7 +288,7 @@ export function SpeakerDetail() {
         {series.length === 0 && standaloneEpisodes.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">No content available yet</p>
+            <p className="text-slate-400">{t('noContentAvailableYet')}</p>
           </div>
         )}
       </div>

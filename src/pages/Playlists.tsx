@@ -7,6 +7,7 @@ import { getEpisodeById } from '../lib/appwrite';
 import type { Playlist, QueueItem } from '../types';
 import { formatRelativeDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -36,6 +37,7 @@ export function Playlists() {
   const [editPlaylist, setEditPlaylist] = useState<Playlist | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function loadPlaylists() {
@@ -140,7 +142,7 @@ export function Playlists() {
         <div className="px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <ListMusic size={20} className="text-primary" />
-            Playlists
+            {t('playlists')}
           </h1>
           
           <motion.button
@@ -172,7 +174,7 @@ export function Playlists() {
               className="w-full max-w-md glass-card rounded-2xl p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-100">Create Playlist</h2>
+                <h2 className="text-lg font-semibold text-slate-100">{t('createPlaylist')}</h2>
                 <button
                   onClick={() => setShowCreate(false)}
                   className="p-1 text-slate-500 hover:text-slate-300"
@@ -183,24 +185,24 @@ export function Playlists() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Name</label>
+                  <label className="text-sm text-slate-400 mb-1 block">{t('name')}</label>
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="My Playlist"
+                    placeholder={t('myPlaylist')}
                     className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
                     autoFocus
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Description (optional)</label>
+                  <label className="text-sm text-slate-400 mb-1 block">{t('descriptionOpt')}</label>
                   <input
                     type="text"
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
-                    placeholder="Add a description..."
+                    placeholder={t('addDescription')}
                     className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
                   />
                 </div>
@@ -210,7 +212,7 @@ export function Playlists() {
                     onClick={() => setShowCreate(false)}
                     className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-medium"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={handleCreate}
@@ -250,7 +252,7 @@ export function Playlists() {
               className="w-full max-w-md glass-card rounded-2xl p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-100">Edit Playlist</h2>
+                <h2 className="text-lg font-semibold text-slate-100">{t('editPlaylist')}</h2>
                 <button
                   onClick={() => setEditPlaylist(null)}
                   className="p-1 text-slate-500 hover:text-slate-300"
@@ -261,7 +263,7 @@ export function Playlists() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Name</label>
+                  <label className="text-sm text-slate-400 mb-1 block">{t('name')}</label>
                   <input
                     type="text"
                     value={editName}
@@ -272,12 +274,12 @@ export function Playlists() {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Description (optional)</label>
+                  <label className="text-sm text-slate-400 mb-1 block">{t('descriptionOpt')}</label>
                   <input
                     type="text"
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Add a description..."
+                    placeholder={t('addDescription')}
                     className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50"
                   />
                 </div>
@@ -287,7 +289,7 @@ export function Playlists() {
                     onClick={() => setEditPlaylist(null)}
                     className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-medium"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={handleSaveEdit}
@@ -300,7 +302,7 @@ export function Playlists() {
                     )}
                   >
                     <Check size={18} />
-                    Save
+                    {t('save')}
                   </button>
                 </div>
               </div>
@@ -331,16 +333,16 @@ export function Playlists() {
             <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
               <ListMusic className="w-10 h-10 text-slate-600" />
             </div>
-            <p className="text-slate-400 text-lg">No playlists yet</p>
+            <p className="text-slate-400 text-lg">{t('noPlaylistsYet')}</p>
             <p className="text-sm text-slate-500 mt-2 mb-4">
-              Create your first playlist to organize episodes
+              {t('createFirstPlaylist')}
             </p>
             <button
               onClick={() => setShowCreate(true)}
               className="px-6 py-3 bg-primary text-slate-900 font-medium rounded-xl flex items-center gap-2 mx-auto"
             >
               <Plus size={18} />
-              Create Playlist
+              {t('createPlaylist')}
             </button>
           </motion.div>
         ) : (
@@ -367,7 +369,7 @@ export function Playlists() {
                         {playlist.name}
                       </p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                        <span>{playlist.itemCount || 0} episodes</span>
+                        <span>{playlist.itemCount || 0} {t('episodes')}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-600" />
                         <span>{formatRelativeDate(new Date(playlist.createdAt))}</span>
                       </div>
@@ -401,21 +403,21 @@ export function Playlists() {
                               className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
                             >
                               <Play size={14} />
-                              Play All
+                              {t('playAll')}
                             </button>
                             <button
                               onClick={() => handleOpenEdit(playlist)}
                               className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
                             >
                               <Edit size={14} />
-                              Edit
+                              {t('edit')}
                             </button>
                             <button
                               onClick={() => handleDelete(playlist.id!)}
                               className="w-full px-3 py-2 text-left text-sm text-rose-400 hover:bg-slate-700 flex items-center gap-2"
                             >
                               <Trash2 size={14} />
-                              Delete
+                              {t('delete')}
                             </button>
                           </motion.div>
                         )}

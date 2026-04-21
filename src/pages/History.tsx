@@ -6,6 +6,7 @@ import { getRecentHistory } from '../lib/db';
 import { getEpisodeById, isAppwriteConfigured } from '../lib/appwrite';
 import type { PlaybackHistory, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { formatDuration, formatRelativeDate, cn } from '../lib/utils';
 
 const container = {
@@ -28,6 +29,7 @@ interface HistoryItem extends PlaybackHistory {
 export function History() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   const { play, currentTrack, playerState } = useAudio();
 
@@ -83,10 +85,10 @@ export function History() {
         <div className="px-4 py-4">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <HistoryIcon size={20} className="text-primary" />
-            Playback History
+            {t('playbackHistory')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Resume where you left off
+            {t('resumeWhereYouLeftOff')}
           </p>
         </div>
       </div>
@@ -116,15 +118,15 @@ export function History() {
             <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
               <HistoryIcon className="w-10 h-10 text-slate-600" />
             </div>
-            <p className="text-slate-400 text-lg">No playback history</p>
+            <p className="text-slate-400 text-lg">{t('noPlaybackHistory')}</p>
             <p className="text-sm text-slate-500 mt-2">
-              Episodes you listen to will appear here
+              {t('episodesYouListenAppearHere')}
             </p>
             <Link 
               to="/"
               className="inline-block mt-4 px-6 py-3 bg-primary text-slate-900 font-medium rounded-xl"
             >
-              Start Listening
+              {t('startListening')}
             </Link>
           </motion.div>
         ) : (
@@ -183,7 +185,7 @@ export function History() {
                         {!h.completed && remainingTime > 0 && (
                           <>
                             <span className="w-1 h-1 rounded-full bg-slate-600" />
-                            <span>{formatDuration(remainingTime)} left</span>
+                            <span>{formatDuration(remainingTime)} {t('left')}</span>
                           </>
                         )}
                         <span className="w-1 h-1 rounded-full bg-slate-600" />

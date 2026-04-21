@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAudio } from '../../context/AudioContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import { formatDuration, cn, PLAYBACK_SPEEDS, getPlaybackSpeedLabel } from '../../lib/utils';
 import { getPlaylists, addToPlaylist } from '../../lib/db';
 import {
@@ -27,6 +28,7 @@ function SpeedSheet({
   onSelect: (s: number) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -37,7 +39,7 @@ function SpeedSheet({
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <Gauge size={18} className="text-primary" />
-          Playback Speed
+          {t('playbackSpeed')}
         </h3>
         <button onClick={onClose} className="p-2 rounded-xl bg-slate-700 text-slate-400 hover:text-white">
           <X size={16} />
@@ -76,6 +78,7 @@ function SleepSheet({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const options = [5, 10, 15, 30, 45, 60, 90];
   return (
     <motion.div
@@ -87,7 +90,7 @@ function SleepSheet({
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <Moon size={18} className="text-amber-400" />
-          Sleep Timer
+          {t('sleepTimer')}
           {remaining && (
             <span className="text-sm text-amber-400 font-mono ml-1">({formatSleepTimer(remaining)})</span>
           )}
@@ -116,7 +119,7 @@ function SleepSheet({
           onClick={() => { onClear(); onClose(); }}
           className="mt-4 w-full py-3 rounded-xl text-sm font-medium bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all"
         >
-          Cancel Timer
+          {t('cancelTimer')}
         </motion.button>
       )}
     </motion.div>
@@ -132,6 +135,7 @@ function PlaylistSheet({
   onSelect: (playlistId: number) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -142,14 +146,14 @@ function PlaylistSheet({
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-100 flex items-center gap-2">
           <ListPlus size={18} className="text-primary" />
-          Add to Playlist
+          {t('addToPlaylistTitle')}
         </h3>
         <button onClick={onClose} className="p-2 rounded-xl bg-slate-700 text-slate-400 hover:text-white">
           <X size={16} />
         </button>
       </div>
       {playlists.length === 0 ? (
-        <p className="text-slate-400 text-center py-4">No playlists yet. Create one in the Playlists tab.</p>
+        <p className="text-slate-400 text-center py-4">{t('noPlaylistsYetMsg')}</p>
       ) : (
         <div className="space-y-2">
           {playlists.map((playlist) => (
@@ -173,6 +177,7 @@ function PlaylistSheet({
 }
 
 export function MiniPlayer() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     currentTrack,
@@ -439,7 +444,7 @@ export function MiniPlayer() {
                       )}
                     >
                       <RepeatIcon size={18} />
-                      <span className="text-[10px]">{repeatMode === 'one' ? 'One' : repeatMode === 'all' ? 'All' : 'Off'}</span>
+                      <span className="text-[10px]">{repeatMode === 'one' ? t('one') : repeatMode === 'all' ? t('allMode') : t('offMode')}</span>
                     </motion.button>
 
                     {/* Favorite */}
@@ -453,7 +458,7 @@ export function MiniPlayer() {
                       )}
                     >
                       <Heart size={18} className={isFavoriteTrack ? "fill-current" : ""} />
-                      <span className="text-[10px]">{isFavoriteTrack ? 'Liked' : 'Like'}</span>
+                      <span className="text-[10px]">{isFavoriteTrack ? t('liked') : t('like')}</span>
                     </motion.button>
 
                     {/* Sleep Timer */}
@@ -467,7 +472,7 @@ export function MiniPlayer() {
                       )}
                     >
                       <Timer size={18} />
-                      <span className="text-[10px]">{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : 'Sleep'}</span>
+                      <span className="text-[10px]">{sleepTimerRemaining ? formatSleepTimer(sleepTimerRemaining) : t('sleep')}</span>
                     </motion.button>
 
                     {/* Speed */}
@@ -492,7 +497,7 @@ export function MiniPlayer() {
                       className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
                     >
                       <ListPlus size={18} />
-                      <span className="text-[10px]">Playlist</span>
+                      <span className="text-[10px]">{t('playlist')}</span>
                     </motion.button>
 
                     {/* Stop */}
@@ -503,7 +508,7 @@ export function MiniPlayer() {
                       className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-rose-400 transition-all"
                     >
                       <X size={18} />
-                      <span className="text-[10px]">Stop</span>
+                      <span className="text-[10px]">{t('stop')}</span>
                     </motion.button>
                   </div>
                 </motion.div>

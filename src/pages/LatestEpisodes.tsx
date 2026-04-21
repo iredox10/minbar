@@ -6,6 +6,7 @@ import { getLatestEpisodes, getSeriesById, isAppwriteConfigured } from '../lib/a
 import type { Episode, Series, CurrentTrack } from '../types';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { DownloadButton } from '../components/audio/DownloadButton';
 
 const container = {
@@ -27,6 +28,7 @@ export function LatestEpisodes() {
   const [seriesMap, setSeriesMap] = useState<Record<string, Series>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { t } = useTranslation();
   
   const { play, currentTrack, playerState } = useAudio();
 
@@ -99,14 +101,14 @@ export function LatestEpisodes() {
             <Link to="/" className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-xl font-bold text-slate-100">Latest Episodes</h1>
+            <h1 className="text-xl font-bold text-slate-100">{t('latestEpisodes')}</h1>
           </div>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input
               type="text"
-              placeholder="Search episodes..."
+              placeholder={t('searchEpisodes')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all"
@@ -218,10 +220,10 @@ export function LatestEpisodes() {
               <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
                 <Clock className="w-10 h-10 text-slate-600" />
               </div>
-              <p className="text-slate-400">No episodes found</p>
+              <p className="text-slate-400">{t('noEpisodesFound')}</p>
               {searchQuery && (
                 <p className="text-sm text-slate-500 mt-2">
-                  Try a different search term
+                  {t('tryDifferentSearchTerm')}
                 </p>
               )}
             </motion.div>

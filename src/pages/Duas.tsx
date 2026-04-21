@@ -5,20 +5,22 @@ import { getAllDuas, isAppwriteConfigured } from '../lib/appwrite';
 import { trackDuaView } from '../lib/analytics';
 import type { Dua, DuaCategory, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { cn } from '../lib/utils';
 
-const CATEGORIES: { id: DuaCategory; label: string; icon: string; gradient: string }[] = [
-  { id: 'prophetic', label: 'Prophetic', icon: '📖', gradient: 'from-amber-500/20 to-orange-500/20' },
-  { id: 'quranic', label: 'Quranic', icon: '📿', gradient: 'from-emerald-500/20 to-teal-500/20' },
-  { id: 'morning', label: 'Morning', icon: '🌅', gradient: 'from-yellow-500/20 to-amber-500/20' },
-  { id: 'evening', label: 'Evening', icon: '🌙', gradient: 'from-indigo-500/20 to-purple-500/20' },
-  { id: 'sleep', label: 'Sleep', icon: '💫', gradient: 'from-violet-500/20 to-purple-500/20' },
-  { id: 'travel', label: 'Travel', icon: '✈️', gradient: 'from-sky-500/20 to-blue-500/20' },
-  { id: 'eating', label: 'Eating', icon: '🍽️', gradient: 'from-rose-500/20 to-pink-500/20' },
-  { id: 'general', label: 'General', icon: '🤲', gradient: 'from-slate-500/20 to-gray-500/20' }
+const CATEGORIES: { id: DuaCategory; labelKey: any; icon: string; gradient: string }[] = [
+  { id: 'prophetic', labelKey: 'catProphetic', icon: '📖', gradient: 'from-amber-500/20 to-orange-500/20' },
+  { id: 'quranic', labelKey: 'catQuranic', icon: '📿', gradient: 'from-emerald-500/20 to-teal-500/20' },
+  { id: 'morning', labelKey: 'catMorning', icon: '🌅', gradient: 'from-yellow-500/20 to-amber-500/20' },
+  { id: 'evening', labelKey: 'catEvening', icon: '🌙', gradient: 'from-indigo-500/20 to-purple-500/20' },
+  { id: 'sleep', labelKey: 'catSleep', icon: '💫', gradient: 'from-violet-500/20 to-purple-500/20' },
+  { id: 'travel', labelKey: 'catTravel', icon: '✈️', gradient: 'from-sky-500/20 to-blue-500/20' },
+  { id: 'eating', labelKey: 'catEating', icon: '🍽️', gradient: 'from-rose-500/20 to-pink-500/20' },
+  { id: 'general', labelKey: 'catGeneral', icon: '🤲', gradient: 'from-slate-500/20 to-gray-500/20' }
 ];
 
 export function Duas() {
+  const { t } = useTranslation();
   const [duas, setDuas] = useState<Dua[]>([]);
   const [filteredDuas, setFilteredDuas] = useState<Dua[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,9 +114,9 @@ export function Duas() {
               <BookOpen className="w-10 h-10 text-emerald-400" />
             </div>
             <h1 className="text-3xl font-bold text-slate-100 mb-2">
-              Dua Collection
+              {t('duaCollection')}
             </h1>
-            <p className="text-slate-400">Prophetic & Quranic supplications</p>
+            <p className="text-slate-400">{t('propheticQuranic')}</p>
           </motion.div>
 
           {/* Search */}
@@ -127,7 +129,7 @@ export function Duas() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input
               type="text"
-              placeholder="Search duas..."
+              placeholder={t('searchDuas')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-4 py-3 bg-slate-900/80 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all"
@@ -150,7 +152,7 @@ export function Duas() {
                   : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
               )}
             >
-              All
+              {t('all')}
             </button>
             {CATEGORIES.map((cat) => (
               <button
@@ -164,7 +166,7 @@ export function Duas() {
                 )}
               >
                 <span>{cat.icon}</span>
-                <span>{cat.label}</span>
+                <span>{t(cat.labelKey)}</span>
               </button>
             ))}
           </motion.div>
@@ -198,9 +200,9 @@ export function Duas() {
                 <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-slate-800/50 flex items-center justify-center">
                   <Sparkles className="w-12 h-12 text-slate-600" />
                 </div>
-                <p className="text-slate-400 text-lg">No duas found</p>
+                <p className="text-slate-400 text-lg">{t('noDuasFound')}</p>
                 {duas.length === 0 && (
-                  <p className="text-sm text-slate-500 mt-2">Add duas in Appwrite</p>
+                  <p className="text-sm text-slate-500 mt-2">{t('addDuasInAppwrite')}</p>
                 )}
               </motion.div>
             ) : (
@@ -236,7 +238,7 @@ export function Duas() {
                         <h3 className="font-semibold text-slate-100">{dua.title}</h3>
                       </div>
                       <span className="text-xs text-slate-500 uppercase tracking-wide">
-                        {dua.category}
+                        {dua.category && t(CATEGORIES.find(c => c.id === dua.category)?.labelKey)}
                       </span>
                     </div>
                     
@@ -333,7 +335,7 @@ export function Duas() {
                     }}
                     className="mt-3 text-xs text-primary hover:text-primary-light transition-colors"
                   >
-                    {expandedDua === dua.$id ? 'Show less' : 'Read translation'}
+                    {expandedDua === dua.$id ? t('showLess') : t('readTranslation')}
                   </button>
                 </div>
               </motion.div>

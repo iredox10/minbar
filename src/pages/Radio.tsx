@@ -5,6 +5,7 @@ import { getRadioStations, isAppwriteConfigured } from '../lib/appwrite';
 import type { RadioStation, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { cn } from '../lib/utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 const container = {
   hidden: { opacity: 0 },
@@ -23,6 +24,7 @@ export function Radio() {
   const [stations, setStations] = useState<RadioStation[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState<Set<string>>(new Set());
+  const { t } = useTranslation();
   
   const { play, pause, currentTrack, playerState, toggleMute, isMuted, volume, setVolume } = useAudio();
 
@@ -89,8 +91,8 @@ export function Radio() {
           >
             <RadioIcon className="w-10 h-10 text-primary" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Live Radio</h1>
-          <p className="text-slate-400">Stream Islamic content 24/7</p>
+          <h1 className="text-3xl font-bold text-slate-100 mb-2">{t('liveRadio')}</h1>
+          <p className="text-slate-400">{t('liveRadioDesc2')}</p>
           
           {currentTrack && playerState === 'playing' && currentTrack.type === 'radio' && (
             <motion.div
@@ -102,7 +104,7 @@ export function Radio() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-sm text-emerald-400 font-medium">Now Streaming: {currentTrack.title}</span>
+              <span className="text-sm text-emerald-400 font-medium">{t('nowStreaming')} {currentTrack.title}</span>
             </motion.div>
           )}
         </div>
@@ -132,8 +134,8 @@ export function Radio() {
             <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-slate-800/50 flex items-center justify-center">
               <Signal className="w-12 h-12 text-slate-600" />
             </div>
-            <p className="text-slate-400 text-lg">No stations available</p>
-            <p className="text-sm text-slate-500 mt-2">Add radio stations in Appwrite</p>
+            <p className="text-slate-400 text-lg">{t('noStations')}</p>
+            <p className="text-sm text-slate-500 mt-2">{t('addStationsAppwrite')}</p>
           </motion.div>
         ) : (
           <motion.div
@@ -214,7 +216,7 @@ export function Radio() {
                       )}
                       <div className="flex items-center gap-2 mt-2">
                         <span className="px-2 py-0.5 rounded-full bg-slate-800 text-xs text-slate-400">
-                          {station.isLive ? 'Live Stream' : 'Recorded'}
+                          {station.isLive ? t('liveStream') : t('recorded')}
                         </span>
                       </div>
                     </div>

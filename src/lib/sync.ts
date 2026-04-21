@@ -3,7 +3,9 @@ import {
   databases, 
   DATABASE_ID, 
   USER_FAVORITES_COLLECTION, 
-  USER_HISTORY_COLLECTION
+  USER_HISTORY_COLLECTION,
+  USER_PLAYLISTS_COLLECTION,
+  USER_PLAYLIST_ITEMS_COLLECTION
 } from './appwrite';
 import { db } from './db';
 
@@ -143,9 +145,162 @@ export async function syncHistory(userId: string) {
   }
 }
 
+export async function syncPlaylists(userId: string) {
+  if (!userId) return;
+
+  try {
+    const cloudPlaylists = await databases.listDocuments(
+      DATABASE_ID,
+      USER_PLAYLISTS_COLLECTION,
+      [Query.equal('userId', userId), Query.limit(100)]
+    );
+
+    const localPlaylists = await db.playlists.toArray();
+
+    const cloudPlaylistMap = new Map(); // map cloudId -> doc
+    for (const doc of cloudPlaylists.documents) {
+      cloudPlaylistMap.set(doc.$id, doc);
+    }
+
+    const localPlaylistMap = new Map(); // map appwriteId -> playlist
+    for (const pl of localPlaylists) {
+      if (pl.appwriteId) {
+        localPlaylistMap.set(pl.appwriteId, pl);
+      }
+    }
+
+    // Pull from cloud
+    for (const doc of cloudPlaylists.documents) {
+      let localPl = localPlaylistMap.get(doc.$id);
+      
+      if (!localPl) {
+        // match by name?
+        localPl = localPlaylists.find(p => p.name === doc.name);
+      if (localPl) localPlaylistMap.set(doc.$id, localPl);
+      }
+
+      if (!localPl) {
+        const newId = await db.playlists.add({
+          appwriteId: doc.$id,
+          name: doc.name,
+          description: doc.description,
+          createdAt: new Date(doc.createdAt),
+          updatedAt: new Date(doc.updatedAt),
+        });
+        localPlaylistMap.set(doc.$id, { id: newId, appwriteId: doc.$id, name: doc.name });
+      } else {
+        const cloudUpdated = new Date(doc.updatedAt);
+        if (!localPl.appwriteId || cloudUpdated > localPl.updatedAt) {
+          await db.playlists.update(localPl.id!, {
+            appwriteId: doc.$id,
+            name: doc.name,
+            description: doc.description,
+            updatedAt: cloudUpdated,
+          });
+        }
+      }
+    }
+
+    // Push to cloud
+    for (const pl of localPlaylists) {
+      if (!pl.appwriteId) {
+        const newDoc = await databases.createDocument(
+          DATABASE_ID,
+          USER_PLAYLISTS_COLLECTION,
+          ID.unique(),
+          {
+            userId,
+            name: pl.name,
+            description: pl.description || '',
+            createdAt: pl.createdAt.toISOString(),
+            updatedAt: pl.updatedAt.toISOString(),
+          }
+        );
+        await db.playlists.update(pl.id!, { appwriteId: newDoc.$id });
+        localPlaylistMap.set(newDoc.$id, { ...pl, appwriteId: newDoc.$id });
+      } else {
+        const cloudDoc = cloudPlaylistMap.get(pl.appwriteId);
+        if (cloudDoc) {
+          const cloudUpdated = new Date(cloudDoc.updatedAt);
+          if (pl.updatedAt > cloudUpdated) {
+            await databases.updateDocument(
+              DATABASE_ID,
+              USER_PLAYLISTS_COLLECTION,
+              pl.appwriteId,
+              {
+                name: pl.name,
+                description: pl.description || '',
+                updatedAt: pl.updatedAt.toISOString(),
+              }
+            );
+          }
+        }
+      }
+    }
+
+    // Now sync playlist items
+    const cloudItems = await databases.listDocuments(
+      DATABASE_ID,
+      USER_PLAYLIST_ITEMS_COLLECTION,
+      [Query.equal('userId', userId), Query.limit(500)]
+    );
+
+    const localItems = await db.playlistItems.toArray();
+
+    // Pull items
+    for (const doc of cloudItems.documents) {
+      // Find local playlist id
+      let localPlId: number | undefined;
+      
+      const plByAppwriteId = await db.playlists.filter(p => p.appwriteId === doc.playlistId).first();
+      if (plByAppwriteId) localPlId = plByAppwriteId.id;
+
+      if (!localPlId) continue;
+
+      const existsLocal = localItems.find(i => i.playlistId === localPlId && i.episodeId === doc.episodeId);
+      
+      if (!existsLocal) {
+        await db.playlistItems.add({
+          appwriteId: doc.$id,
+          playlistId: localPlId,
+          episodeId: doc.episodeId,
+          addedAt: new Date(doc.addedAt),
+        });
+      } else if (!existsLocal.appwriteId) {
+        await db.playlistItems.update(existsLocal.id!, { appwriteId: doc.$id });
+      }
+    }
+
+    // Push items
+    for (const item of localItems) {
+      if (!item.appwriteId) {
+        const localPl = await db.playlists.get(item.playlistId);
+        if (localPl && localPl.appwriteId) {
+          const newDoc = await databases.createDocument(
+            DATABASE_ID,
+            USER_PLAYLIST_ITEMS_COLLECTION,
+            ID.unique(),
+            {
+              userId,
+              playlistId: localPl.appwriteId,
+              episodeId: item.episodeId,
+              addedAt: item.addedAt.toISOString(),
+            }
+          );
+          await db.playlistItems.update(item.id!, { appwriteId: newDoc.$id });
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('Sync playlists failed:', error);
+  }
+}
+
 export async function syncUserData(userId: string) {
   await Promise.all([
     syncFavorites(userId),
     syncHistory(userId),
+    syncPlaylists(userId)
   ]);
 }

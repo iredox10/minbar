@@ -86,7 +86,7 @@ export function Settings() {
           <Sliders className="w-8 h-8 text-slate-300" />
         </div>
         <h1 className="text-2xl font-bold text-slate-100">{t('settings')}</h1>
-        <p className="text-sm text-slate-400 mt-1">Customize your experience</p>
+        <p className="text-sm text-slate-400 mt-1">{t('customizeExperience')}</p>
       </motion.div>
 
       <motion.div
@@ -120,12 +120,12 @@ export function Settings() {
             ) : (
               <div className="flex flex-col items-center text-center py-2">
                 <UserCircle className="w-12 h-12 text-slate-500 mb-3" />
-                <p className="text-sm text-slate-300 mb-4">Sync your history, favorites, and playlists across devices.</p>
+                <p className="text-sm text-slate-300 mb-4">{t('syncDescription')}</p>
                 <button
                   onClick={() => login(OAuthProvider.Google)}
                   className="px-6 py-2.5 rounded-xl bg-primary text-slate-900 font-medium hover:bg-primary-light transition-colors w-full"
                 >
-                  Continue with Google
+                  {t('continueWithGoogle')}
                 </button>
               </div>
             )}
@@ -162,16 +162,16 @@ export function Settings() {
 
         {/* Appearance */}
         <motion.section variants={item} className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Appearance</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('appearance')}</h2>
           
           <div className="glass-card rounded-2xl p-4">
-            <p className="text-sm text-slate-300 mb-4 font-medium">Theme</p>
+            <p className="text-sm text-slate-300 mb-4 font-medium">{t('theme')}</p>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'light', icon: Sun, label: 'Light' },
-                { value: 'dark', icon: Moon, label: 'Dark' },
-                { value: 'system', icon: Monitor, label: 'System' }
-              ].map(({ value, icon: Icon, label }) => (
+                { value: 'light', icon: Sun, labelKey: 'light' },
+                { value: 'dark', icon: Moon, labelKey: 'dark' },
+                { value: 'system', icon: Monitor, labelKey: 'system' }
+              ].map(({ value, icon: Icon, labelKey }) => (
                 <motion.button
                   key={value}
                   whileHover={{ scale: 1.02 }}
@@ -185,7 +185,7 @@ export function Settings() {
                   )}
                 >
                   <Icon size={20} />
-                  <span className="text-xs font-medium">{label}</span>
+                  <span className="text-xs font-medium">{t(labelKey as any)}</span>
                 </motion.button>
               ))}
             </div>
@@ -194,7 +194,7 @@ export function Settings() {
 
         {/* Playback */}
         <motion.section variants={item} className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Playback</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('playback')}</h2>
           
           <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center justify-between mb-4">
@@ -203,8 +203,8 @@ export function Settings() {
                   <Zap className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-200 font-medium">Playback Speed</p>
-                  <p className="text-xs text-slate-500">Current: {getPlaybackSpeedLabel(playbackSpeed)}</p>
+                  <p className="text-sm text-slate-200 font-medium">{t('playbackSpeed')}</p>
+                  <p className="text-xs text-slate-500">{t('current')}: {getPlaybackSpeedLabel(playbackSpeed)}</p>
                 </div>
               </div>
             </div>
@@ -241,10 +241,10 @@ export function Settings() {
                 )} />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-slate-200 font-medium">Sleep Timer</p>
+                <p className="text-sm text-slate-200 font-medium">{t('sleepTimer')}</p>
                 {sleepTimerRemaining && (
                   <p className="text-xs text-violet-400 font-medium">
-                    {Math.ceil(sleepTimerRemaining / 60000)} min remaining
+                    {Math.ceil(sleepTimerRemaining / 60000)} {t('minRemaining')}
                   </p>
                 )}
               </div>
@@ -259,7 +259,7 @@ export function Settings() {
                   onClick={() => setSleepTimer(minutes)}
                   className="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
                 >
-                  {minutes} min
+                  {minutes} {t('min')}
                 </motion.button>
               ))}
               
@@ -270,7 +270,7 @@ export function Settings() {
                   onClick={clearSleepTimer}
                   className="px-4 py-2 rounded-xl text-xs font-medium bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-colors"
                 >
-                  Cancel
+                  {t('cancel')}
                 </motion.button>
               )}
             </div>
@@ -279,7 +279,7 @@ export function Settings() {
 
         {/* Downloads */}
         <motion.section variants={item} className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Downloads</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('downloads')}</h2>
           
           <div className="glass-card rounded-2xl divide-y divide-slate-800">
             <label className="flex items-center justify-between p-4 cursor-pointer group">
@@ -288,8 +288,8 @@ export function Settings() {
                   <Wifi className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-200 font-medium">Wi-Fi only</p>
-                  <p className="text-xs text-slate-500">Save mobile data</p>
+                  <p className="text-sm text-slate-200 font-medium">{t('wifiOnly')}</p>
+                  <p className="text-xs text-slate-500">{t('saveMobileData')}</p>
                 </div>
               </div>
               <div className="relative">
@@ -310,8 +310,8 @@ export function Settings() {
                   <DownloadIcon className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-200 font-medium">Auto-download</p>
-                  <p className="text-xs text-slate-500">New episodes from subscriptions</p>
+                  <p className="text-sm text-slate-200 font-medium">{t('autoDownload')}</p>
+                  <p className="text-xs text-slate-500">{t('newEpisodesFromSubs')}</p>
                 </div>
               </div>
               <div className="relative">
@@ -330,7 +330,7 @@ export function Settings() {
 
         {/* Support */}
         <motion.section variants={item} className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Support</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('support')}</h2>
           
           <div className="glass-card rounded-2xl overflow-hidden">
             <Link 
@@ -342,8 +342,8 @@ export function Settings() {
                   <Heart className="w-5 h-5 text-rose-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-200 font-medium">Donate</p>
-                  <p className="text-xs text-slate-500">Support the development</p>
+                  <p className="text-sm text-slate-200 font-medium">{t('donate')}</p>
+                  <p className="text-xs text-slate-500">{t('supportDevelopment')}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
@@ -353,7 +353,7 @@ export function Settings() {
 
         {/* About */}
         <motion.section variants={item} className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">About</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">{t('about')}</h2>
           
           <div className="glass-card rounded-2xl p-5">
             <div className="flex items-center gap-4 mb-4">
@@ -362,18 +362,17 @@ export function Settings() {
               </div>
               <div>
                 <p className="font-bold text-slate-100 text-lg">Arewa Central</p>
-                <p className="text-xs text-slate-500">Version 1.0.0</p>
+                <p className="text-xs text-slate-500">{t('version')} 1.0.0</p>
               </div>
             </div>
             
             <div className="p-4 bg-slate-800/50 rounded-xl">
               <div className="flex items-center gap-2 text-primary mb-2">
                 <Sparkles size={16} />
-                <span className="text-sm font-medium">Free. No Ads. No Tracking.</span>
+                <span className="text-sm font-medium">{t('freeNoAds')}</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Your daily companion for audio podcasts, lectures, duas, and more. 
-                Designed to help you stay connected with beneficial knowledge.
+                {t('aboutDescription')}
               </p>
             </div>
           </div>

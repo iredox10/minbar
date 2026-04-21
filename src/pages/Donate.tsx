@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Heart, CreditCard, ExternalLink, Building2, Copy, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { useTranslation } from '../hooks/useTranslation';
 import { cn } from '../lib/utils';
 
 const container = {
@@ -21,6 +22,7 @@ const item = {
 export function Donate() {
   const [copied, setCopied] = useState(false);
   const { settings, loading } = useAppSettings();
+  const { t } = useTranslation();
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -45,9 +47,9 @@ export function Donate() {
         <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6">
           <Heart size={32} className="text-slate-500" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-100 mb-2">Donations Paused</h1>
+        <h1 className="text-2xl font-bold text-slate-100 mb-2">{t('donationsPaused')}</h1>
         <p className="text-slate-400 text-center max-w-sm">
-          We are currently not accepting donations. Jazakumullahu Khairan for your intention!
+          {t('donationsPausedDesc')}
         </p>
       </div>
     );
@@ -58,7 +60,7 @@ export function Donate() {
     donationLinks.push({
       id: 'paystack',
       title: 'Paystack',
-      description: 'Secure payment via Paystack',
+      description: t('paystackDesc'),
       icon: CreditCard,
       url: settings.paystackUrl,
       color: 'bg-[#092E20]',
@@ -70,7 +72,7 @@ export function Donate() {
     donationLinks.push({
       id: 'flutterwave',
       title: 'Flutterwave',
-      description: 'Support us via Flutterwave',
+      description: t('flutterwaveDesc'),
       icon: CreditCard,
       url: settings.flutterwaveUrl,
       color: 'bg-[#FB9129]',
@@ -92,10 +94,9 @@ export function Donate() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 mb-6">
           <Heart size={32} className="fill-emerald-500/20" />
         </div>
-        <h1 className="text-3xl font-bold text-slate-100 mb-4">Support Arewa Central</h1>
+        <h1 className="text-3xl font-bold text-slate-100 mb-4">{t('supportArewaCentral')}</h1>
         <p className="text-slate-400 text-lg leading-relaxed">
-          This app is completely free and built to spread beneficial knowledge. 
-          Your support helps us cover server costs, maintain the app, and continue adding great content.
+          {t('supportDesc')}
         </p>
       </motion.div>
 
@@ -158,7 +159,7 @@ export function Donate() {
             {donationLinks.length > 0 && (
               <div className="flex items-center gap-3 mb-4 px-2">
                 <div className="h-[1px] flex-1 bg-slate-800"></div>
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">Or</span>
+                <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">{t('or')}</span>
                 <div className="h-[1px] flex-1 bg-slate-800"></div>
               </div>
             )}
@@ -171,29 +172,29 @@ export function Donate() {
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-100">Direct Bank Transfer</h3>
-                  <p className="text-sm text-slate-400">Send directly to our Naira account</p>
+                  <h3 className="text-lg font-bold text-slate-100">{t('directBankTransfer')}</h3>
+                  <p className="text-sm text-slate-400">{t('sendDirectlyNaira')}</p>
                 </div>
               </div>
 
               <div className="space-y-4 relative">
                 {settings.bankName && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Bank Name</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t('bankName')}</p>
                     <p className="text-slate-200 font-medium">{settings.bankName}</p>
                   </div>
                 )}
                 
                 {settings.accountName && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Account Name</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t('accountName')}</p>
                     <p className="text-slate-200 font-medium">{settings.accountName}</p>
                   </div>
                 )}
 
                 {settings.accountNumber && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Account Number</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t('accountNumber')}</p>
                     <div className="flex items-center justify-between bg-slate-900/50 rounded-xl p-3 border border-slate-700">
                       <span className="text-xl font-mono text-emerald-400 tracking-wider">{settings.accountNumber}</span>
                       <button 
@@ -203,12 +204,12 @@ export function Donate() {
                         {copied ? (
                           <>
                             <CheckCircle2 size={16} className="text-emerald-500" />
-                            <span className="text-sm font-medium text-emerald-500">Copied</span>
+                            <span className="text-sm font-medium text-emerald-500">{t('copied')}</span>
                           </>
                         ) : (
                           <>
                             <Copy size={16} />
-                            <span className="text-sm font-medium">Copy</span>
+                            <span className="text-sm font-medium">{t('copy')}</span>
                           </>
                         )}
                       </button>
@@ -222,7 +223,7 @@ export function Donate() {
 
         <motion.div variants={item} className="pt-8 text-center">
           <p className="text-sm text-slate-500">
-            Jazakumullahu Khairan for your generosity.
+            {t('jazakallahG')}
           </p>
         </motion.div>
       </motion.div>

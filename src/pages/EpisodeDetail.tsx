@@ -11,6 +11,7 @@ import { getEpisodeById, getSeriesById, getEpisodesBySeries, getRelatedEpisodes,
 import { getPlaybackHistory, isFavorite, addFavorite, removeFavorite, getPlaylists, addToPlaylist } from '../lib/db';
 import { useAudio } from '../context/AudioContext';
 import { useDownloads } from '../hooks/useDownloads';
+import { useTranslation } from '../hooks/useTranslation';
 import type { Episode, Series, CurrentTrack, Playlist } from '../types';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ export function EpisodeDetail() {
   const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [savedPosition, setSavedPosition] = useState(0);
+  const { t } = useTranslation();
   
   const { 
     play, togglePlayPause, seek, seekRelative,
@@ -136,7 +138,7 @@ export function EpisodeDetail() {
     if (!episode) return;
     await addToPlaylist(playlistId, episode.$id);
     setShowPlaylistSheet(false);
-    toast.success('Added to playlist');
+    toast.success(t('addedToPlaylist'));
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -153,16 +155,16 @@ export function EpisodeDetail() {
       await removeDownload(episode.$id);
       setDownloaded(false);
       setLocalUrl(null);
-      toast.success('Download removed');
+      toast.success(t('downloadRemoved'));
     } else {
       const success = await downloadEpisode(episode);
       if (success) {
         setDownloaded(true);
         const url = await getLocalUrl(episode.$id);
         setLocalUrl(url);
-        toast.success('Episode downloaded to device');
+        toast.success(t('episodeDownloaded'));
       } else {
-        toast.error('Download failed');
+        toast.error(t('downloadFailed'));
       }
     }
   };
@@ -195,7 +197,7 @@ export function EpisodeDetail() {
       });
     } else {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard');
+      toast.success(t('linkCopied'));
     }
   };
 
@@ -272,12 +274,12 @@ export function EpisodeDetail() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-400">Episode not found</p>
+          <p className="text-slate-400">{t('episodeNotFound')}</p>
           <button
             onClick={() => navigate(-1)}
             className="mt-4 text-primary"
           >
-            Go back
+            {t('goBack')}
           </button>
         </div>
       </div>
@@ -329,7 +331,7 @@ export function EpisodeDetail() {
             {savedPosition > 0 && !isCurrentEpisode && (
               <span className="flex items-center gap-1 text-primary">
                 <Clock size={12} />
-                {Math.round(savedProgressPercent)}% listened
+                {Math.round(savedProgressPercent)}% {t('listened')}
               </span>
             )}
           </div>
@@ -358,12 +360,12 @@ export function EpisodeDetail() {
               {isCurrentEpisode && playerState === 'playing' ? (
                 <>
                   <Pause size={18} />
-                  <span>Pause</span>
+                  <span>{t('pause')}</span>
                 </>
               ) : (
                 <>
                   <Play size={18} className="ml-0.5" />
-                  <span>{isCurrentEpisode ? 'Resume' : savedPosition > 0 ? 'Resume' : 'Play'}</span>
+                  <span>{isCurrentEpisode ? t('resume') : savedPosition > 0 ? t('resume') : t('play')}</span>
                 </>
               )}
             </button>
@@ -445,7 +447,7 @@ export function EpisodeDetail() {
                 )}
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Next Episode</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t('nextEpisode')}</p>
                 <p className="text-xs text-slate-300 truncate group-hover:text-white transition-colors">
                   {nextEpisode.title}
                 </p>
@@ -509,7 +511,7 @@ export function EpisodeDetail() {
                 onClick={() => setShowSpeedMenu(!showSpeedMenu)}
                 className="w-full py-2 text-center text-sm text-slate-300 bg-slate-800 rounded-lg"
               >
-                Speed: {playbackSpeed}x
+                {t('speed')}: {playbackSpeed}x
               </button>
               
               {showSpeedMenu && (
@@ -544,7 +546,7 @@ export function EpisodeDetail() {
             transition={{ delay: 0.1 }}
             className="glass-card rounded-xl p-4 mb-4"
           >
-            <h2 className="font-semibold text-slate-200 mb-2">About this episode</h2>
+            <h2 className="font-semibold text-slate-200 mb-2">{t('aboutThisEpisode')}</h2>
             <div className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
               {renderDescription(episode.description)}
             </div>
@@ -559,7 +561,7 @@ export function EpisodeDetail() {
             transition={{ delay: 0.2 }}
             className="glass-card rounded-xl p-4 mb-4"
           >
-            <h2 className="font-semibold text-slate-200 mb-3">More from this series</h2>
+            <h2 className="font-semibold text-slate-200 mb-3">{t('moreFromThisSeries')}</h2>
             <div className="space-y-2">
               {seriesEpisodes.slice(0, 8).map(ep => (
                 <button
@@ -602,12 +604,12 @@ export function EpisodeDetail() {
             transition={{ delay: 0.3 }}
             className="glass-card rounded-xl p-4"
           >
-            <h2 className="font-semibold text-slate-200 mb-3">Related Content</h2>
+            <h2 className="font-semibold text-slate-200 mb-3">{t('relatedContent')}</h2>
             <div className="space-y-2">
               {filteredRelated.map(ep => (
                 <button
                   key={ep.$id}
-                  onClick={() => navigate(`/episode/${ep.$id}`)}
+                  onClick={() => navigate(`/podcasts/episode/${ep.$id}`)}
                   className={cn(
                     'w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left group',
                     currentTrack?.id === ep.$id
@@ -662,7 +664,7 @@ export function EpisodeDetail() {
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-slate-100 flex items-center gap-2">
                   <ListPlus size={18} className="text-primary" />
-                  Add to Playlist
+                  {t('addToPlaylistTitle')}
                 </h3>
                 <button
                   onClick={() => setShowPlaylistSheet(false)}
@@ -672,7 +674,7 @@ export function EpisodeDetail() {
                 </button>
               </div>
               {playlists.length === 0 ? (
-                <p className="text-slate-400 text-center py-4 text-sm">No playlists yet. Create one in the Playlists tab.</p>
+                <p className="text-slate-400 text-center py-4 text-sm">{t('noPlaylistsYetMsg')}</p>
               ) : (
                 <div className="space-y-2">
                   {playlists.map(pl => (

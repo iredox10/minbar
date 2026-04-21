@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, TrendingUp, ArrowLeft } from 'lucide-react';
 import { getAllSpeakers, isAppwriteConfigured } from '../lib/appwrite';
 import type { Speaker } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 export function Speakers() {
+  const { t } = useTranslation();
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [filteredSpeakers, setFilteredSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,14 +58,14 @@ export function Speakers() {
             <Link to="/" className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-xl font-bold text-slate-100">All Speakers</h1>
+            <h1 className="text-xl font-bold text-slate-100">{t('allSpeakers')}</h1>
           </div>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input
               type="text"
-              placeholder="Search speakers..."
+              placeholder={t('searchSpeakers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all"
@@ -91,7 +93,7 @@ export function Speakers() {
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp size={18} className="text-primary" />
-                  <h2 className="text-lg font-semibold text-slate-100">Featured</h2>
+                  <h2 className="text-lg font-semibold text-slate-100">{t('featured')}</h2>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -140,7 +142,7 @@ export function Speakers() {
             {otherSpeakers.length > 0 && (
               <section>
                 <h2 className="text-lg font-semibold text-slate-100 mb-4">
-                  {featuredSpeakers.length > 0 ? 'All Speakers' : 'Speakers'}
+                  {featuredSpeakers.length > 0 ? t('allSpeakers') : t('speakers')}
                 </h2>
                 
                 <div className="space-y-3">
@@ -189,10 +191,10 @@ export function Speakers() {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800/50 flex items-center justify-center">
                   <User className="w-10 h-10 text-slate-600" />
                 </div>
-                <p className="text-slate-400">No speakers found</p>
+                <p className="text-slate-400">{t('noSpeakersFound')}</p>
                 {searchQuery && (
                   <p className="text-sm text-slate-500 mt-2">
-                    Try a different search term
+                    {t('tryDifferentSearchTerm')}
                   </p>
                 )}
               </motion.div>
