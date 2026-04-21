@@ -62,6 +62,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const currentTrackRef = useRef<CurrentTrack | null>(null);
   const positionRef = useRef(0);
+  const durationRef = useRef(0);
   const playbackSpeedRef = useRef(1);
   const repeatModeRef = useRef<RepeatMode>('off');
   const queueRef = useRef<QueueItem[]>([]);
@@ -78,6 +79,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     positionRef.current = position;
   }, [position]);
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
 
   useEffect(() => {
     playbackSpeedRef.current = playbackSpeed;
@@ -312,7 +317,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     loadSavedState();
   }, []);
 
-  // Periodic cloud sync
+  // Periodic cloud sync + local history save
   useEffect(() => {
     if (!initialized) return;
 
@@ -323,6 +328,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           positionRef.current,
           playbackSpeedRef.current
         );
+        // Also save to local playback history so it shows up on History page
+        if (currentTrackRef.current.type === 'episode') {
+          updatePlaybackProgress(
+            currentTrackRef.current.id,
+            positionRef.current,
+            durationRef.current,
+            false,
+            {
+              title: currentTrackRef.current.title,
+              artworkUrl: currentTrackRef.current.artworkUrl,
+              audioUrl: currentTrackRef.current.audioUrl,
+              speaker: currentTrackRef.current.speaker,
+            }
+          );
+        }
       }
     }, CLOUD_SYNC_INTERVAL);
 
@@ -433,7 +453,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     });
   }, [handleTrackEnd]);
 
-  // Save to cloud on page unload
+  // Save to cloud + local history on page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (currentTrackRef.current && playerState !== 'idle') {
@@ -442,6 +462,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           positionRef.current,
           playbackSpeedRef.current
         );
+        // Save to local playback history so it shows up on History page
+        if (currentTrackRef.current.type === 'episode') {
+          updatePlaybackProgress(
+            currentTrackRef.current.id,
+            positionRef.current,
+            durationRef.current,
+            false,
+            {
+              title: currentTrackRef.current.title,
+              artworkUrl: currentTrackRef.current.artworkUrl,
+              audioUrl: currentTrackRef.current.audioUrl,
+              speaker: currentTrackRef.current.speaker,
+            }
+          );
+        }
       }
     };
 

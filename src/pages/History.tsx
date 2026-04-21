@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { History as HistoryIcon, Play, Clock, CheckCircle } from 'lucide-react';
-import { getRecentHistory } from '../lib/db';
+import { db, getRecentHistory } from '../lib/db';
 import { getEpisodeById, isAppwriteConfigured } from '../lib/appwrite';
 import type { PlaybackHistory, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
@@ -27,27 +28,30 @@ interface HistoryItem extends PlaybackHistory {
 }
 
 export function History() {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [enrichedHistory, setEnrichedHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
   const { play, currentTrack, playerState } = useAudio();
 
-  useEffect(() => {
-    async function loadHistory() {
-      try {
-        const historyData = await getRecentHistory(50);
+  // Live query so history auto-updates when new entries are added
+  const rawHistory = useLiveQuery(() => getRecentHistory(50), []);
 
+  useEffect(() => {
+    if (rawHistory === undefined) return; // still loading
+
+    async function enrichHistory() {
+      try {
         if (isAppwriteConfigured()) {
           const historyWithEpisodes = await Promise.all(
-            historyData.map(async (h) => {
+            rawHistory.map(async (h) => {
               const episode = await getEpisodeById(h.episodeId);
               return { ...h, episode: episode || undefined };
             })
           );
-          setHistory(historyWithEpisodes.filter(h => h.episode));
+          setEnrichedHistory(historyWithEpisodes.filter(h => h.episode));
         } else {
-          setHistory(historyData);
+          setEnrichedHistory(rawHistory);
         }
       } catch (error) {
         console.error('Failed to load history:', error);
@@ -56,8 +60,8 @@ export function History() {
       }
     }
 
-    loadHistory();
-  }, []);
+    enrichHistory();
+  }, [rawHistory]);
 
   const handlePlayEpisode = (historyItem: HistoryItem) => {
     if (!historyItem.episode) return;
@@ -109,7 +113,7 @@ export function History() {
               </div>
             ))}
           </div>
-        ) : history.length === 0 ? (
+        ) : enrichedHistory.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -136,9 +140,9 @@ export function History() {
             animate="show"
             className="space-y-3"
           >
-            {history.map((h) => {
-              if (!h.episode) return null;
-              
+            {enrichedHistory.map((h) => {
+              const title = h.episode?.title ?? h.title ?? t('episode');
+              const episodeId = h.episode?.$id ?? h.episodeId;
               const progress = getProgressPercentage(h);
               const remainingTime = h.duration - h.position;
 
@@ -149,17 +153,32 @@ export function History() {
                   whileHover={{ x: 4 }}
                   className={cn(
                     "glass-card rounded-2xl p-4 group cursor-pointer",
-                    isPlaying(h.episodeId) && "border-primary/50 bg-primary/5"
+                    isPlaying(episodeId) && "border-primary/50 bg-primary/5"
                   )}
                 >
                   <div className="flex items-center gap-4">
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => handlePlayEpisode(h)}
+                      onClick={() => {
+                        if (h.episode) {
+                          handlePlayEpisode(h);
+                        } else if (h.audioUrl) {
+                          const track: CurrentTrack = {
+                            id: h.episodeId,
+                            title,
+                            audioUrl: h.audioUrl,
+                            artworkUrl: h.artworkUrl,
+                            speaker: h.speaker,
+                            duration: h.duration,
+                            type: 'episode',
+                          };
+                          play(track, h.position);
+                        }
+                      }}
                       className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative overflow-hidden",
-                        isPlaying(h.episodeId)
+                        isPlaying(episodeId)
                           ? "bg-primary text-slate-900 shadow-lg shadow-primary/30"
                           : "bg-slate-800 text-slate-300 group-hover:bg-primary group-hover:text-slate-900"
                       )}
@@ -172,11 +191,14 @@ export function History() {
                     </motion.button>
 
                     <div className="flex-1 min-w-0">
-                      <Link to={`/podcasts/episode/${h.episode.$id}`}>
+                      <Link to={`/podcasts/episode/${episodeId}`}>
                         <p className="font-medium text-slate-100 truncate group-hover:text-primary transition-colors">
-                          {h.episode.title}
+                          {title}
                         </p>
                       </Link>
+                      {h.speaker && (
+                        <p className="text-xs text-slate-500 truncate">{h.speaker}</p>
+                      )}
                       <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
                           <Clock size={10} />
