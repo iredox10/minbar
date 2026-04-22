@@ -3,12 +3,15 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, SkipBack, SkipForward, 
-  ArrowLeft, Download, Heart, Share2,
+  ArrowLeft, Download, Heart, Share2, Quote,
   Clock, Calendar, ListPlus, X, SkipForward as NextIcon,
   Music2,
 } from 'lucide-react';
 import { getEpisodeById, getSeriesById, getEpisodesBySeries, getRelatedEpisodes, isAppwriteConfigured } from '../lib/appwrite';
 import { getPlaybackHistory, isFavorite, addFavorite, removeFavorite, getPlaylists, addToPlaylist } from '../lib/db';
+import { updateMetaTags, getEpisodeMeta, resetMetaTags } from '../lib/metaTags';
+import { ShareSheet } from '../components/audio/ShareSheet';
+import { QuoteCardSheet } from '../components/audio/QuoteCardSheet';
 import { useAudio } from '../context/AudioContext';
 import { useDownloads } from '../hooks/useDownloads';
 import { useTranslation } from '../hooks/useTranslation';
@@ -30,6 +33,8 @@ export function EpisodeDetail() {
   const [favorited, setFavorited] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showQuoteSheet, setShowQuoteSheet] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [savedPosition, setSavedPosition] = useState(0);
   const { t } = useTranslation();
@@ -54,6 +59,7 @@ export function EpisodeDetail() {
         const episodeData = await getEpisodeById(id);
         if (episodeData) {
           setEpisode(episodeData);
+          updateMetaTags(getEpisodeMeta(episodeData));
           
           if (episodeData.tags && episodeData.tags.length > 0) {
             getRelatedEpisodes(episodeData.tags, episodeData.$id).then(setRelatedEpisodes);
@@ -94,6 +100,7 @@ export function EpisodeDetail() {
     }
     
     loadData();
+    return () => resetMetaTags();
   }, [id, checkDownloaded, getLocalUrl]);
 
   const handlePlay = async (startSeconds?: number) => {
@@ -187,18 +194,8 @@ export function EpisodeDetail() {
     }
   };
 
-  const handleShare = async () => {
-    if (!episode) return;
-    
-    if (navigator.share) {
-      await navigator.share({
-        title: episode.title,
-        url: window.location.href
-      });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success(t('linkCopied'));
-    }
+  const handleShare = () => {
+    setShowShareSheet(true);
   };
 
   const progressPercent = duration > 0 ? (position / duration) * 100 : 0;
@@ -421,8 +418,18 @@ export function EpisodeDetail() {
             </button>
             
             <button
+              onClick={() => setShowQuoteSheet(true)}
+              className="p-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+              aria-label="Create quote card"
+              title="Create quote card"
+            >
+              <Quote size={20} />
+            </button>
+            
+            <button
               onClick={handleShare}
               className="p-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+              aria-label="Share episode"
             >
               <Share2 size={20} />
             </button>
@@ -695,6 +702,24 @@ export function EpisodeDetail() {
           </>
         )}
       </AnimatePresence>
+
+      {episode && (
+        <ShareSheet
+          episode={episode}
+          speakerName={series?.title}
+          isOpen={showShareSheet}
+          onClose={() => setShowShareSheet(false)}
+        />
+      )}
+
+      {episode && (
+        <QuoteCardSheet
+          episodeTitle={episode.title}
+          speakerName={series?.title}
+          isOpen={showQuoteSheet}
+          onClose={() => setShowQuoteSheet(false)}
+        />
+      )}
     </div>
   );
 }

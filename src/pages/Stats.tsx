@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, TrendingUp, Calendar, Headphones, Award, CheckCircle } from 'lucide-react';
+import { BarChart3, Clock, TrendingUp, Calendar, Headphones, Award, CheckCircle, Share2 } from 'lucide-react';
 import { getRecentHistory } from '../lib/db';
 import type { PlaybackHistory } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatDuration, cn } from '../lib/utils';
+import { MilestoneCardSheet } from '../components/audio/MilestoneCardSheet';
 
 const container = {
   hidden: { opacity: 0 },
@@ -36,6 +37,7 @@ export function Stats() {
   const [history, setHistory] = useState<PlaybackHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
+  const [showMilestoneSheet, setShowMilestoneSheet] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -135,11 +137,18 @@ export function Stats() {
   return (
     <div className="min-h-screen">
       <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50">
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <BarChart3 size={20} className="text-primary" />
             {t('listeningStats') || 'Listening Stats'}
           </h1>
+          <button
+            onClick={() => setShowMilestoneSheet(true)}
+            className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-primary hover:bg-slate-700 transition-colors"
+            aria-label="Share milestone"
+          >
+            <Share2 size={18} />
+          </button>
         </div>
 
         <div className="px-4 pb-3 flex gap-2">
@@ -297,6 +306,11 @@ export function Stats() {
           </motion.div>
         )}
       </div>
+
+      <MilestoneCardSheet
+        isOpen={showMilestoneSheet}
+        onClose={() => setShowMilestoneSheet(false)}
+      />
     </div>
   );
 }

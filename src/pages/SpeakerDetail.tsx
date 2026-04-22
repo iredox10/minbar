@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Play, Clock, Music, UserPlus, UserCheck } from 'lucide-react';
 import { getSpeakerBySlug, getSeriesBySpeaker, getStandaloneEpisodesBySpeaker, isAppwriteConfigured } from '../lib/appwrite';
+import { updateMetaTags, getSpeakerMeta, resetMetaTags } from '../lib/metaTags';
 import { useAudio } from '../context/AudioContext';
 import { useUser } from '../context/UserContext';
 import type { Speaker, Series, Episode, CurrentTrack } from '../types';
@@ -46,6 +47,7 @@ export function SpeakerDetail() {
         const speakerData = await getSpeakerBySlug(slug);
         if (speakerData) {
           setSpeaker(speakerData);
+          updateMetaTags(getSpeakerMeta(speakerData));
           const [seriesData, episodesData] = await Promise.all([
             getSeriesBySpeaker(speakerData.$id),
             getStandaloneEpisodesBySpeaker(speakerData.$id)
@@ -61,6 +63,7 @@ export function SpeakerDetail() {
     }
 
     loadSpeaker();
+    return () => resetMetaTags();
   }, [slug]);
 
   const handlePlayEpisode = (episode: Episode) => {

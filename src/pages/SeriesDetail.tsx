@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Play, Clock, Download, Heart, Share2, ListChecks, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { getSeriesById, getEpisodesBySeries, getRelatedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
+import { updateMetaTags, getSeriesMeta, resetMetaTags } from '../lib/metaTags';
 import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { useDownloads } from '../hooks/useDownloads';
@@ -55,6 +56,7 @@ export function SeriesDetail() {
         setEpisodes(episodesData);
 
         if (seriesData) {
+          updateMetaTags(getSeriesMeta(seriesData));
           const fav = await isFavorite('series', seriesData.$id);
           setIsFav(fav);
           
@@ -79,6 +81,7 @@ export function SeriesDetail() {
     }
 
     loadSeries();
+    return () => resetMetaTags();
   }, [id]);
 
   const handleToggleFavorite = async () => {

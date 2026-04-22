@@ -1,28 +1,32 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Download, Image, X, Loader2, QrCode } from 'lucide-react';
+import { Quote, Download, Share2, X, Loader2, QrCode } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { ShareCard } from '../components/share/ShareCard';
-import type { Episode } from '../types';
 import { toast } from 'sonner';
 
-interface ShareSheetProps {
-  episode: Episode;
+interface QuoteCardSheetProps {
+  episodeTitle?: string;
   speakerName?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheetProps) {
+export function QuoteCardSheet({ episodeTitle, speakerName, isOpen, onClose }: QuoteCardSheetProps) {
+  const [quote, setQuote] = useState('');
   const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [includeQR, setIncludeQR] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const shareUrl = `${window.location.origin}/podcasts/episode/${episode.$id}`;
+  const shareUrl = window.location.origin;
 
-  const handleGenerateCard = useCallback(async () => {
+  const handleGenerate = useCallback(async () => {
+    if (!quote.trim()) {
+      toast.error('Please enter a quote');
+      return;
+    }
+
     setGenerating(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -39,14 +43,13 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
 
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
-      setGenerated(true);
     } catch (error) {
-      console.error('Failed to generate share card:', error);
-      toast.error('Failed to generate share card');
+      console.error('Failed to generate quote card:', error);
+      toast.error('Failed to generate quote card');
     } finally {
       setGenerating(false);
     }
-  }, [episode.$id, speakerName, includeQR]);
+  }, [quote, speakerName, episodeTitle, includeQR]);
 
   const handleDownload = async () => {
     if (!previewUrl) return;
@@ -54,7 +57,7 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
     try {
       const response = await fetch(previewUrl);
       const blob = await response.blob();
-      const filename = `${episode.title.replace(/[^a-zA-Z0-9]/g, '_')}_share.png`;
+      const filename = `arewa-quote-${Date.now()}.png`;
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -63,7 +66,7 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success('Image downloaded');
+      toast.success('Quote card downloaded');
     } catch (error) {
       console.error('Failed to download:', error);
       toast.error('Failed to download image');
@@ -76,14 +79,15 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
     try {
       const response = await fetch(previewUrl);
       const blob = await response.blob();
+      const text = speakerName ? `"${quote}" — ${speakerName}` : `"${quote}"`;
       
       try {
-        const file = new File([blob], 'arewa-central-share.png', { type: 'image/png' });
+        const file = new File([blob], 'arewa-quote.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
-            title: episode.title,
-            text: `Listen to "${episode.title}" on Arewa Central`
+            title: 'Arewa Central Quote',
+            text
           });
           toast.success('Shared successfully');
           return;
@@ -99,29 +103,8 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
     }
   };
 
-  const handleShareLink = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: episode.title,
-          text: `Listen to "${episode.title}" on Arewa Central`,
-          url: shareUrl
-        });
-        toast.success('Shared successfully');
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    }
-  };
-
   const handleReset = () => {
-    setGenerated(false);
+    setQuote('');
     setPreviewUrl(null);
   };
 
@@ -148,8 +131,8 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
             <div className="px-6 pb-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-                  <Share2 size={20} className="text-primary" />
-                  Share Episode
+                  <Quote size={20} className="text-emerald-400" />
+                  Create Quote Card
                 </h3>
                 <button
                   onClick={onClose}
@@ -159,55 +142,61 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
                 </button>
               </div>
 
-              {!generated ? (
-                <div className="space-y-3">
-                  <button
-                    onClick={handleGenerateCard}
-                    disabled={generating}
-                    className="w-full p-4 bg-slate-800/50 rounded-2xl flex items-center gap-4 hover:bg-slate-700/50 transition-colors disabled:opacity-50"
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                      {generating ? (
-                        <Loader2 size={24} className="text-primary animate-spin" />
-                      ) : (
-                        <Image size={24} className="text-primary" />
-                      )}
-                    </div>
-                    <div className="text-left flex-1">
-                      <p className="font-medium text-slate-100">
-                        {generating ? 'Generating...' : 'Create Share Card'}
-                      </p>
-                      <p className="text-sm text-slate-400">Beautiful image with episode artwork</p>
-                    </div>
-                    <label className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {!previewUrl ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Quote or Lesson</label>
+                    <textarea
+                      value={quote}
+                      onChange={(e) => setQuote(e.target.value)}
+                      placeholder="Enter a powerful quote or lesson from this episode..."
+                      rows={4}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary/50 resize-none"
+                    />
+                  </div>
+
+                  {episodeTitle && (
+                    <p className="text-xs text-slate-500">
+                      From: {episodeTitle}{speakerName ? ` by ${speakerName}` : ''}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-slate-400">
                       <input
                         type="checkbox"
                         checked={includeQR}
                         onChange={(e) => setIncludeQR(e.target.checked)}
                         className="w-4 h-4 rounded accent-primary"
                       />
-                      <QrCode size={16} className="text-slate-400" />
+                      <QrCode size={14} />
+                      Include QR code
                     </label>
-                  </button>
+                  </div>
 
                   <button
-                    onClick={handleShareLink}
-                    className="w-full p-4 bg-slate-800/50 rounded-2xl flex items-center gap-4 hover:bg-slate-700/50 transition-colors"
+                    onClick={handleGenerate}
+                    disabled={generating || !quote.trim()}
+                    className="w-full py-3 bg-emerald-500 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center">
-                      <Share2 size={24} className="text-sky-400" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-slate-100">Share Link</p>
-                      <p className="text-sm text-slate-400">Share episode link directly</p>
-                    </div>
+                    {generating ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Quote size={18} />
+                        Generate Quote Card
+                      </>
+                    )}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {previewUrl && (
                     <div className="rounded-2xl overflow-hidden bg-slate-800">
-                      <img src={previewUrl} alt="Share card preview" className="w-full" />
+                      <img src={previewUrl} alt="Quote card preview" className="w-full" />
                     </div>
                   )}
 
@@ -217,11 +206,11 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
                       className="flex-1 py-3 bg-slate-800 text-slate-200 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
                     >
                       <Download size={18} />
-                      Save Image
+                      Save
                     </button>
                     <button
                       onClick={handleShare}
-                      className="flex-1 py-3 bg-primary text-slate-900 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-light transition-colors"
+                      className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
                     >
                       <Share2 size={18} />
                       Share
@@ -232,7 +221,7 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
                     onClick={handleReset}
                     className="w-full py-3 text-slate-400 text-sm hover:text-slate-200 transition-colors"
                   >
-                    ← Back to options
+                    ← Create another quote card
                   </button>
                 </div>
               )}
@@ -243,12 +232,10 @@ export function ShareSheet({ episode, speakerName, isOpen, onClose }: ShareSheet
           <div className="fixed left-0 top-0 -z-50 opacity-0 pointer-events-none" style={{ width: '540px' }}>
             <div ref={cardRef} className="scale-[0.5] origin-top-left" style={{ width: '1080px', height: '1080px' }}>
               <ShareCard
-                type="episode"
-                title={episode.title}
-                subtitle={speakerName}
-                imageUrl="/logo.svg"
+                type="quote"
+                title={quote || 'Your quote here'}
+                subtitle={speakerName || episodeTitle}
                 accentColor="#10b981"
-                badge={`Episode ${episode.episodeNumber || ''}`}
                 footer="Listen on Arewa Central — Free. No Ads."
                 qrUrl={includeQR ? shareUrl : undefined}
               />

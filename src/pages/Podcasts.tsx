@@ -8,9 +8,9 @@ import type { Speaker, Episode, Series, CurrentTrack, PlaybackHistory } from '..
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 import { DownloadButton } from '../components/audio/DownloadButton';
+import { ShareSheet } from '../components/audio/ShareSheet';
 import { SupportBanner } from '../components/SupportBanner';
 import { useTranslation } from '../hooks/useTranslation';
-import { toast } from 'sonner';
 
 import { useAppSettings } from '../hooks/useAppSettings';
 
@@ -99,27 +99,12 @@ export function Podcasts() {
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
 
-  const handleShareEpisode = async (episode: Episode) => {
-    const shareUrl = `${window.location.origin}/podcasts/episode/${episode.$id}`;
-    const shareData = {
-      title: episode.title,
-      text: `Listen to "${episode.title}" on Arewa Central`,
-      url: shareUrl
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        toast.success('Shared successfully');
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    }
+  const [shareEpisode, setShareEpisode] = useState<Episode | null>(null);
+  const [shareSpeaker, setShareSpeaker] = useState<string | undefined>(undefined);
+
+  const handleShareEpisode = (episode: Episode, speaker?: string) => {
+    setShareEpisode(episode);
+    setShareSpeaker(speaker);
   };
 
   return (
@@ -504,6 +489,18 @@ export function Podcasts() {
             </motion.div>
           )}
         </div>
+      )}
+
+      {shareEpisode && (
+        <ShareSheet
+          episode={shareEpisode}
+          speakerName={shareSpeaker}
+          isOpen={!!shareEpisode}
+          onClose={() => {
+            setShareEpisode(null);
+            setShareSpeaker(undefined);
+          }}
+        />
       )}
     </div>
   );

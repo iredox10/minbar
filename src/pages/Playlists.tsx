@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ListMusic, Plus, MoreVertical, Trash2, Edit, Play, X, Check } from 'lucide-react';
+import { ListMusic, Plus, MoreVertical, Trash2, Edit, Play, X, Check, Share2, Download } from 'lucide-react';
 import { getPlaylists, createPlaylist, deletePlaylist, getPlaylistItems, updatePlaylist } from '../lib/db';
 import { getEpisodeById } from '../lib/appwrite';
 import type { Playlist, QueueItem } from '../types';
 import { formatRelativeDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { generateShareCard, downloadShareCard, shareCard } from '../lib/shareCard';
+import { toast } from 'sonner';
 
 const container = {
   hidden: { opacity: 0 },
@@ -134,6 +136,46 @@ export function Playlists() {
         : p
     ));
     setEditPlaylist(null);
+  };
+
+  const handleSharePlaylist = async (playlist: Playlist & { itemCount?: number }) => {
+    setMenuOpen(null);
+    const shareUrl = `${window.location.origin}/playlists`;
+    try {
+      const blob = await generateShareCard({
+        type: 'playlist',
+        title: playlist.name,
+        subtitle: `${playlist.itemCount || 0} episodes`,
+        description: playlist.description,
+        accent: '#8b5cf6',
+        badge: 'Playlist',
+        footer: 'Listen on Arewa Central — Free. No Ads.',
+        qrUrl: shareUrl,
+      });
+
+      const url = URL.createObjectURL(blob);
+      
+      try {
+        const file = new File([blob], `${playlist.name.replace(/[^a-zA-Z0-9]/g, '_')}_playlist.png`, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: playlist.name,
+            text: `Check out "${playlist.name}" on Arewa Central`
+          });
+          toast.success('Shared successfully');
+          return;
+        }
+      } catch {
+        // Fall through to download
+      }
+
+      await downloadShareCard(blob, `${playlist.name.replace(/[^a-zA-Z0-9]/g, '_')}_playlist.png`);
+      toast.success('Playlist card downloaded');
+    } catch (error) {
+      console.error('Failed to share playlist:', error);
+      toast.error('Failed to share playlist');
+    }
   };
 
   return (
@@ -404,6 +446,13 @@ export function Playlists() {
                             >
                               <Play size={14} />
                               {t('playAll')}
+                            </button>
+                            <button
+                              onClick={() => handleSharePlaylist(playlist)}
+                              className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
+                            >
+                              <Share2 size={14} />
+                              Share
                             </button>
                             <button
                               onClick={() => handleOpenEdit(playlist)}

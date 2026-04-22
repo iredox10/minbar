@@ -9,7 +9,7 @@ import type { PlaybackHistory, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatDuration, formatRelativeDate, cn } from '../lib/utils';
-import { toast } from 'sonner';
+import { ShareSheet } from '../components/audio/ShareSheet';
 
 const container = {
   hidden: { opacity: 0 },
@@ -79,27 +79,10 @@ export function History() {
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
 
-  const handleShareEpisode = async (episodeId: string, episodeTitle: string) => {
-    const shareUrl = `${window.location.origin}/podcasts/episode/${episodeId}`;
-    const shareData = {
-      title: episodeTitle,
-      text: `Listen to "${episodeTitle}" on Arewa Central`,
-      url: shareUrl
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        toast.success('Shared successfully');
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Link copied to clipboard');
-      }
-    }
+  const [shareEpisode, setShareEpisode] = useState<Episode | null>(null);
+
+  const handleShareEpisode = (episode: Episode) => {
+    setShareEpisode(episode);
   };
 
   const getProgressPercentage = (h: PlaybackHistory) => {
@@ -253,7 +236,21 @@ export function History() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleShareEpisode(episodeId, title);
+                        if (h.episode) {
+                          handleShareEpisode(h.episode);
+                        } else {
+                          const ep: Episode = {
+                            $id: h.episodeId,
+                            title: h.title || 'Episode',
+                            slug: '',
+                            audioUrl: h.audioUrl || '',
+                            duration: h.duration,
+                            publishedAt: new Date(h.playedAt).toISOString(),
+                            description: '',
+                            episodeNumber: 0,
+                          };
+                          handleShareEpisode(ep);
+                        }
                       }}
                       className="p-2.5 rounded-lg text-slate-500 hover:text-primary hover:bg-slate-800/50 transition-colors flex-shrink-0"
                       aria-label="Share episode"
@@ -267,6 +264,14 @@ export function History() {
           </motion.div>
         )}
       </div>
+
+      {shareEpisode && (
+        <ShareSheet
+          episode={shareEpisode}
+          isOpen={!!shareEpisode}
+          onClose={() => setShareEpisode(null)}
+        />
+      )}
     </div>
   );
 }
