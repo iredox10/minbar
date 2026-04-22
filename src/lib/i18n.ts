@@ -46,6 +46,7 @@ export const translations = {
     downloadsDesc: 'Available offline',
     playlistsDesc: 'Your custom queues',
     historyDesc: 'Recently played',
+    listeningStats: 'Listening Stats',
     bookmarks: 'Bookmarks',
     bookmarksDesc: 'Saved positions in episodes',
     allContent: 'All content, all in one place',
@@ -266,6 +267,7 @@ export const translations = {
     downloadDisclaimer: 'Downloads take up space on your device.',
     downloading: 'Downloading...',
     keepScreenOpen: 'Keep this screen open while downloading.',
+    downloadAll: 'Download All',
 },
   ha: {
     home: 'Gida',
@@ -314,6 +316,7 @@ export const translations = {
     downloadsDesc: 'Akwai ba tare da intanet ba',
     playlistsDesc: 'Jerin wakokinku',
     historyDesc: 'Abubuwan da aka saurara kwanan nan',
+    listeningStats: 'Ƙididdigar Sauraro',
     bookmarks: 'Alamomi',
     bookmarksDesc: 'Gurbi da aka ajiye a shirye-shirye',
     allContent: 'Dukkan abubuwa a wuri guda',
@@ -534,6 +537,7 @@ export const translations = {
     downloadDisclaimer: 'Saukewa zai dauki waje a wayarka.',
     downloading: 'Ana saukewa...',
     keepScreenOpen: 'A bar wannan fuskar a bude yayin saukewa.',
+    downloadAll: 'Sauke Duka',
 }
 };
 

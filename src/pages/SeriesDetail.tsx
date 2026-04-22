@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Clock, Download, Heart, Share2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Play, Clock, Download, Heart, Share2, ListChecks, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { getSeriesById, getEpisodesBySeries, getRelatedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { isFavorite, addFavorite, removeFavorite, isDownloaded, getDownload } from '../lib/db';
 import type { Series, Episode, CurrentTrack, QueueItem } from '../types';
 import { useAudio } from '../context/AudioContext';
+import { useDownloads } from '../hooks/useDownloads';
 import { formatDuration, formatDate, cn } from '../lib/utils';
 import { DownloadButton } from '../components/audio/DownloadButton';
 import { useTranslation } from '../hooks/useTranslation';
+import { toast } from 'sonner';
 
 const container = {
   hidden: { opacity: 0 },
@@ -32,8 +34,10 @@ export function SeriesDetail() {
   const [loading, setLoading] = useState(true);
   const [isFav, setIsFav] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
+  const [showDownloadQueue, setShowDownloadQueue] = useState(false);
 
   const { play, setQueue, currentTrack, playerState } = useAudio();
+  const { addToQueue, queue, queueProgress, isQueueRunning, processQueue, clearQueue } = useDownloads();
 
   useEffect(() => {
     async function loadSeries() {
@@ -138,21 +142,64 @@ export function SeriesDetail() {
 
   const handleShare = async () => {
     if (!series) return;
+    const shareUrl = window.location.href;
     const shareData = {
       title: series.title,
       text: `Check out "${series.title}" on Arewa Central`,
-      url: window.location.href
+      url: shareUrl
     };
     try {
       if (navigator.share) {
         await navigator.share(shareData);
+        toast.success('Shared successfully');
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
       }
-    } catch {
-      console.log('Share cancelled');
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    }
+  };
+
+  const handleShareEpisode = async (episode: Episode) => {
+    const shareUrl = `${window.location.origin}/podcasts/episode/${episode.$id}`;
+    const shareData = {
+      title: episode.title,
+      text: `Listen to "${episode.title}" on Arewa Central`,
+      url: shareUrl
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast.success('Shared successfully');
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
     }
   };
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
+
+  const handleDownloadAll = () => {
+    const notDownloaded = episodes.filter(ep => !downloadedIds.has(ep.$id));
+    if (notDownloaded.length > 0) {
+      addToQueue(notDownloaded);
+      setShowDownloadQueue(true);
+    }
+  };
+
+  const handleProcessQueue = async () => {
+    await processQueue();
+  };
 
   if (loading) {
     return (
@@ -251,6 +298,16 @@ export function SeriesDetail() {
               </motion.button>
 
               <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDownloadAll}
+                className="px-4 py-3 bg-slate-800 text-slate-200 font-semibold rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-700 transition-colors"
+              >
+                <ListChecks size={18} />
+                {t('downloadAll') || 'Download All'}
+              </motion.button>
+
+              <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleToggleFavorite}
@@ -345,7 +402,19 @@ export function SeriesDetail() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center flex-shrink-0 w-8">
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleShareEpisode(episode);
+                        }}
+                        className="p-2.5 rounded-lg text-slate-500 hover:text-primary hover:bg-slate-800/50 transition-colors"
+                        aria-label="Share episode"
+                      >
+                        <Share2 size={14} />
+                      </button>
                       <DownloadButton episode={episode} series={series} />
                     </div>
                   </div>
@@ -388,6 +457,119 @@ export function SeriesDetail() {
           </motion.section>
         )}
       </div>
+
+      {/* Download Queue Modal */}
+      <AnimatePresence>
+        {showDownloadQueue && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40"
+              onClick={() => setShowDownloadQueue(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700/60 rounded-t-3xl p-6 z-50 max-h-[80vh] overflow-y-auto"
+            >
+              <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-5" />
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-semibold text-slate-100 flex items-center gap-2">
+                  <ListChecks size={18} className="text-primary" />
+                  Download Queue
+                </h3>
+                <button
+                  onClick={() => setShowDownloadQueue(false)}
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {queue.length > 0 && (
+                <div className="mb-4 p-3 bg-slate-800/50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-300">
+                      {queueProgress.completed} / {queueProgress.total} episodes
+                    </span>
+                    {isQueueRunning ? (
+                      <span className="text-xs text-primary flex items-center gap-1">
+                        <Loader2 size={12} className="animate-spin" />
+                        Downloading...
+                      </span>
+                    ) : (
+                      <span className="text-xs text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        Complete
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-primary rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(queueProgress.completed / queueProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 mb-4">
+                {queue.map((ep, i) => {
+                  const isDone = i < queueProgress.completed;
+                  const isCurrent = i === queueProgress.current - 1 && isQueueRunning;
+                  return (
+                    <div
+                      key={ep.$id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl",
+                        isDone ? "bg-emerald-500/10" : isCurrent ? "bg-primary/10" : "bg-slate-800/50"
+                      )}
+                    >
+                      {isDone ? (
+                        <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+                      ) : isCurrent ? (
+                        <Loader2 size={16} className="text-primary animate-spin flex-shrink-0" />
+                      ) : (
+                        <Download size={16} className="text-slate-500 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-200 truncate">{ep.title}</p>
+                        <p className="text-[10px] text-slate-500">{formatDuration(ep.duration)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    clearQueue();
+                    setShowDownloadQueue(false);
+                  }}
+                  className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-medium hover:bg-slate-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                {!isQueueRunning && queue.length > 0 && (
+                  <button
+                    onClick={handleProcessQueue}
+                    className="flex-1 py-3 bg-primary text-slate-900 rounded-xl font-medium hover:bg-primary-light transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download size={16} />
+                    Start Download
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

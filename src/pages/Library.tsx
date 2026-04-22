@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Library as LibraryIcon,
   Bookmark,
+  BarChart3,
 } from 'lucide-react';
 import { SupportBanner } from '../components/SupportBanner';
 import { useTranslation } from '../hooks/useTranslation';
@@ -122,6 +123,14 @@ const PERSONAL_SECTIONS: LibrarySection[] = [
     icon: Bookmark,
     accent: 'bg-primary/15',
     iconColor: 'text-primary',
+  },
+  {
+    labelKey: 'listeningStats' as any,
+    descKey: 'historyDesc' as any,
+    path: '/stats',
+    icon: BarChart3,
+    accent: 'bg-amber-500/15',
+    iconColor: 'text-amber-400',
   },
 ];
 

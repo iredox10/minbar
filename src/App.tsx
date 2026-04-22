@@ -43,6 +43,7 @@ const Series = lazy(() => import('./pages/Series').then(m => ({ default: m.Serie
 const Library = lazy(() => import('./pages/Library').then(m => ({ default: m.Library })));
 const LatestEpisodes = lazy(() => import('./pages/LatestEpisodes').then(m => ({ default: m.LatestEpisodes })));
 const Bookmarks = lazy(() => import('./pages/Bookmarks').then(m => ({ default: m.Bookmarks })));
+const Stats = lazy(() => import('./pages/Stats').then(m => ({ default: m.Stats })));
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -158,6 +159,7 @@ function App() {
               <Route path="/donate" element={<Donate />} />
               <Route path="/library" element={<Library />} />
               <Route path="/bookmarks" element={<Bookmarks />} />
+              <Route path="/stats" element={<Stats />} />
             </Route>
             <Route
               path="/admin/*"

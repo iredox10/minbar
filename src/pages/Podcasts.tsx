@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Play, Clock, User, TrendingUp, PlayCircle, ChevronRight, Heart } from 'lucide-react';
+import { Search, Play, Clock, User, TrendingUp, PlayCircle, ChevronRight, Heart, Share2 } from 'lucide-react';
 import { getFeaturedSpeakers, getLatestEpisodes, getFeaturedSeries, isAppwriteConfigured } from '../lib/appwrite';
 import { getInProgressHistory } from '../lib/db';
 import type { Speaker, Episode, Series, CurrentTrack, PlaybackHistory } from '../types';
@@ -10,6 +10,7 @@ import { useAudio } from '../context/AudioContext';
 import { DownloadButton } from '../components/audio/DownloadButton';
 import { SupportBanner } from '../components/SupportBanner';
 import { useTranslation } from '../hooks/useTranslation';
+import { toast } from 'sonner';
 
 import { useAppSettings } from '../hooks/useAppSettings';
 
@@ -97,6 +98,29 @@ export function Podcasts() {
   };
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
+
+  const handleShareEpisode = async (episode: Episode) => {
+    const shareUrl = `${window.location.origin}/podcasts/episode/${episode.$id}`;
+    const shareData = {
+      title: episode.title,
+      text: `Listen to "${episode.title}" on Arewa Central`,
+      url: shareUrl
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast.success('Shared successfully');
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -436,7 +460,19 @@ export function Podcasts() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-center flex-shrink-0 w-8">
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleShareEpisode(episode);
+                          }}
+                          className="p-2.5 rounded-lg text-slate-500 hover:text-primary hover:bg-slate-800/50 transition-colors"
+                          aria-label="Share episode"
+                        >
+                          <Share2 size={16} />
+                        </button>
                         <DownloadButton episode={episode} />
                       </div>
                     </div>

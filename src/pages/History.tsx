@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { History as HistoryIcon, Play, Clock, CheckCircle } from 'lucide-react';
+import { History as HistoryIcon, Play, Clock, CheckCircle, Share2 } from 'lucide-react';
 import { db, getRecentHistory } from '../lib/db';
 import { getEpisodeById, isAppwriteConfigured } from '../lib/appwrite';
 import type { PlaybackHistory, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatDuration, formatRelativeDate, cn } from '../lib/utils';
+import { toast } from 'sonner';
 
 const container = {
   hidden: { opacity: 0 },
@@ -77,6 +78,29 @@ export function History() {
   };
 
   const isPlaying = (episodeId: string) => currentTrack?.id === episodeId && playerState === 'playing';
+
+  const handleShareEpisode = async (episodeId: string, episodeTitle: string) => {
+    const shareUrl = `${window.location.origin}/podcasts/episode/${episodeId}`;
+    const shareData = {
+      title: episodeTitle,
+      text: `Listen to "${episodeTitle}" on Arewa Central`,
+      url: shareUrl
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast.success('Shared successfully');
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+      }
+    }
+  };
 
   const getProgressPercentage = (h: PlaybackHistory) => {
     if (h.duration === 0) return 0;
@@ -224,6 +248,18 @@ export function History() {
                         </div>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleShareEpisode(episodeId, title);
+                      }}
+                      className="p-2.5 rounded-lg text-slate-500 hover:text-primary hover:bg-slate-800/50 transition-colors flex-shrink-0"
+                      aria-label="Share episode"
+                    >
+                      <Share2 size={14} />
+                    </button>
                   </div>
                 </motion.div>
               );
