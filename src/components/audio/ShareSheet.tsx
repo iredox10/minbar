@@ -2,8 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share2, Download, Image, X, Loader2, QrCode } from 'lucide-react';
 import { toBlob } from 'html-to-image';
-import { ShareCard } from '../components/share/ShareCard';
-import type { Episode } from '../types';
+import { ShareCard } from '../share/ShareCard';
+import type { Episode } from '../../types';
 import { toast } from 'sonner';
 
 interface ShareSheetProps {

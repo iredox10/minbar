@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Upload, X, Loader2, Music2, CheckCircle2, AlertCircle, Replace } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Save, ArrowLeft, Upload, X, Loader2, Music2, AlertCircle, Replace } from 'lucide-react';
 import { adminDatabases, uploadAudio, createEpisode, updateEpisode, EPISODES_COLLECTION, SERIES_COLLECTION, SPEAKERS_COLLECTION, DATABASE_ID, Query } from '../../lib/admin';
 import type { Episode, Series, Speaker } from '../../types';
 import { cn, slugify } from '../../lib/utils';
@@ -358,7 +358,7 @@ export function AdminEpisodeForm() {
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
                     <div className="text-center">
                       <p className="text-slate-300 font-medium">Uploading audio...</p>
-                      {selectedFileName && (
+                      {selectedFileName && selectedFileSize !== null && (
                         <p className="text-xs text-slate-500 mt-1">{selectedFileName} ({formatFileSize(selectedFileSize)})</p>
                       )}
                     </div>

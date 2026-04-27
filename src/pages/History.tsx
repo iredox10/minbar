@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { History as HistoryIcon, Play, Clock, CheckCircle, Share2 } from 'lucide-react';
-import { db, getRecentHistory } from '../lib/db';
+import { getRecentHistory } from '../lib/db';
 import { getEpisodeById, isAppwriteConfigured } from '../lib/appwrite';
 import type { PlaybackHistory, Episode, CurrentTrack } from '../types';
 import { useAudio } from '../context/AudioContext';
@@ -39,20 +39,21 @@ export function History() {
   const rawHistory = useLiveQuery(() => getRecentHistory(50), []);
 
   useEffect(() => {
-    if (rawHistory === undefined) return; // still loading
+    const data = rawHistory;
+    if (!data) return;
 
     async function enrichHistory() {
       try {
         if (isAppwriteConfigured()) {
           const historyWithEpisodes = await Promise.all(
-            rawHistory.map(async (h) => {
+            data!.map(async (h) => {
               const episode = await getEpisodeById(h.episodeId);
               return { ...h, episode: episode || undefined };
             })
           );
           setEnrichedHistory(historyWithEpisodes.filter(h => h.episode));
         } else {
-          setEnrichedHistory(rawHistory);
+          setEnrichedHistory(data!);
         }
       } catch (error) {
         console.error('Failed to load history:', error);

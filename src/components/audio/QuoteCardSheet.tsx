@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Quote, Download, Share2, X, Loader2, QrCode } from 'lucide-react';
 import { toBlob } from 'html-to-image';
-import { ShareCard } from '../components/share/ShareCard';
+import { ShareCard } from '../share/ShareCard';
 import { toast } from 'sonner';
 
 interface QuoteCardSheetProps {

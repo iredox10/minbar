@@ -1014,7 +1014,7 @@ export function PlayerPage() {
               <PlaylistSheet playlists={playlists} onSelect={handleAddToPlaylist} onClose={() => setSheet(null)} />
             )}
             {sheet === 'share' && currentTrack && (
-              <ShareSheet track={currentTrack} currentPosition={position} totalDuration={duration} onClose={() => setSheet(null)} />
+              <ShareSheet episode={{ $id: currentTrack.id, title: currentTrack.title, slug: '', audioUrl: currentTrack.audioUrl, duration: currentTrack.duration, publishedAt: '', description: '', episodeNumber: 0, speakerId: currentTrack.speaker }} speakerName={currentTrack.speaker} isOpen onClose={() => setSheet(null)} />
             )}
             {sheet === 'download' && currentTrack && (
               <DownloadSheet track={currentTrack} onClose={() => setSheet(null)} />

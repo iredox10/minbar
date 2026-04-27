@@ -2,8 +2,9 @@ import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart3, Download, Share2, X, Loader2, Trophy, QrCode } from 'lucide-react';
 import { toBlob } from 'html-to-image';
-import { ShareCard } from '../components/share/ShareCard';
-import { getRecentHistory } from '../lib/db';
+import { ShareCard } from '../share/ShareCard';
+import { getRecentHistory } from '../../lib/db';
+import type { PlaybackHistory } from '../../types';
 import { toast } from 'sonner';
 
 interface MilestoneCardSheetProps {
@@ -37,10 +38,10 @@ export function MilestoneCardSheet({ isOpen, onClose }: MilestoneCardSheetProps)
       const now = Date.now();
       const weekMs = 7 * 24 * 60 * 60 * 1000;
       
-      const weekHistory = history.filter(h => now - new Date(h.playedAt).getTime() < weekMs);
-      const totalMinutes = Math.round(weekHistory.reduce((acc, h) => acc + Math.min(h.position, h.duration) / 60, 0));
-      const completedCount = weekHistory.filter(h => h.completed).length;
-      const uniqueEpisodes = new Set(weekHistory.map(h => h.episodeId)).size;
+      const weekHistory = history.filter((h: PlaybackHistory) => now - new Date(h.playedAt).getTime() < weekMs);
+      const totalMinutes = Math.round(weekHistory.reduce((acc: number, h: PlaybackHistory) => acc + Math.min(h.position, h.duration) / 60, 0));
+      const completedCount = weekHistory.filter((h: PlaybackHistory) => h.completed).length;
+      const uniqueEpisodes = new Set(weekHistory.map((h: PlaybackHistory) => h.episodeId)).size;
 
       const hours = Math.floor(totalMinutes / 60);
       const mins = totalMinutes % 60;

@@ -125,9 +125,6 @@ export function useDownloads() {
         return false;
       }
       
-      const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-      
       if (!response.body) {
         return false;
       }

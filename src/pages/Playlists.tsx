@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ListMusic, Plus, MoreVertical, Trash2, Edit, Play, X, Check, Share2, Download } from 'lucide-react';
+import { ListMusic, Plus, MoreVertical, Trash2, Edit, Play, X, Check, Share2 } from 'lucide-react';
 import { getPlaylists, createPlaylist, deletePlaylist, getPlaylistItems, updatePlaylist } from '../lib/db';
 import { getEpisodeById } from '../lib/appwrite';
 import type { Playlist, QueueItem } from '../types';
 import { formatRelativeDate, cn } from '../lib/utils';
 import { useAudio } from '../context/AudioContext';
 import { useTranslation } from '../hooks/useTranslation';
-import { generateShareCard, downloadShareCard, shareCard } from '../lib/shareCard';
+import { generateShareCard, downloadShareCard } from '../lib/shareCard';
 import { toast } from 'sonner';
 
 const container = {
@@ -153,8 +153,6 @@ export function Playlists() {
         qrUrl: shareUrl,
       });
 
-      const url = URL.createObjectURL(blob);
-      
       try {
         const file = new File([blob], `${playlist.name.replace(/[^a-zA-Z0-9]/g, '_')}_playlist.png`, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {

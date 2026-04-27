@@ -5,7 +5,7 @@ import { BarChart3, Clock, TrendingUp, Calendar, Headphones, Award, CheckCircle,
 import { getRecentHistory } from '../lib/db';
 import type { PlaybackHistory } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { formatDuration, cn } from '../lib/utils';
+import { cn } from '../lib/utils';
 import { MilestoneCardSheet } from '../components/audio/MilestoneCardSheet';
 
 const container = {
